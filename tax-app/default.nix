@@ -5,8 +5,10 @@ let
 
   cmd =
     ''
+    appJsHash="$(sha1sum ${src}/app.min.js | awk '{print $1}')"
+
     mkdir -p $out
-    cp ${src}/index.html $out/
+    cat ${src}/index.html | sed -e "s/app.js/app.js?hash=$appJsHash/" > $out/index.html
     cp ${src}/app.min.js $out/app.js
     '';
 in
