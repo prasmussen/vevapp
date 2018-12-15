@@ -9,6 +9,7 @@ import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
+import Html.Attributes as Attributes
 import Url
 import Vevapp.Amount as Amount
 import Vevapp.AmountType as AmountType
@@ -170,6 +171,8 @@ amountInput model =
         [ borderColor
         , Font.size 20
         , Element.spacing 10
+        , Element.htmlAttribute (Attributes.type_ "number")
+        , Element.htmlAttribute (Attributes.step "any")
         ]
         { onChange = SetAmount
         , text = model.amount
@@ -192,6 +195,8 @@ rateInput model =
         [ borderColor
         , Font.size 20
         , Element.spacing 10
+        , Element.htmlAttribute (Attributes.type_ "number")
+        , Element.htmlAttribute (Attributes.step "any")
         ]
         { onChange = SetRate
         , text = model.rate
