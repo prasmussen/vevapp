@@ -156,7 +156,15 @@ amountInput : Model -> Element Msg
 amountInput model =
     let
         label =
-            Input.labelAbove [ Font.bold, Font.size 14 ] (Texts.toElement Texts.AmountT)
+            Input.labelAbove [ Font.bold, Font.size 14 ] (Texts.toElement labelText)
+
+        labelText =
+            case model.amountType of
+                AmountType.IncludingTax ->
+                    Texts.AmountIncludingTaxT
+
+                AmountType.ExcludingTax ->
+                    Texts.AmountExcludingTaxT
     in
     Input.text
         [ borderColor
