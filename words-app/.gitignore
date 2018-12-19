@@ -1,0 +1,4 @@
+.stack-work/
+words-app.cabal
+*~
+wordlist.json
