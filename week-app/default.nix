@@ -21,6 +21,6 @@ mkDerivation {
     time warp
   ];
   preConfigure = "hpack";
-  homepage = "https://github.com/prasmussen/week-app#readme";
+  homepage = "https://github.com/prasmussen/vevapp#readme";
   license = stdenv.lib.licenses.bsd3;
 }
