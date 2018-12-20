@@ -31,7 +31,7 @@ instance ToHtml FourWords where
             head_ $ do
                 meta_ [ charset_ "UTF-8" ]
                 meta_ [ name_ "viewport", content_ "width=device-width, initial-scale=1" ]
-                title_ (words)
+                title_ "Random words"
                 link_ [ rel_ "stylesheet", type_ "text/css", href_ "/static/styles.css" ]
             body_ $ do
                 h1_ words
