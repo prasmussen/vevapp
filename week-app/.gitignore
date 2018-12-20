@@ -1,0 +1,8 @@
+.stack-work/
+week-app.cabal
+*~
+.idea
+*.iml
+out
+ghcid.log
+result
