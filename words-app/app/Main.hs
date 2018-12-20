@@ -1,5 +1,6 @@
-module Main where
+{-# LANGUAGE Strict #-}
 
+module Main where
 
 
 import qualified Data.Aeson as Aeson

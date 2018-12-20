@@ -1,3 +1,5 @@
+{-# LANGUAGE StrictData #-}
+
 module Vevapp.Config
     ( Config(..)
     , ListenPort(..)
