@@ -8,7 +8,6 @@ copyright:           "2018 Petter Rasmussen"
 
 extra-source-files:
 - README.md
-- ChangeLog.md
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
@@ -49,7 +48,7 @@ library:
   source-dirs: src
 
 executables:
-  words-app-exe:
+  words-app:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
