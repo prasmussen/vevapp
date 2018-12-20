@@ -1,0 +1,75 @@
+name:                ip-app
+version:             0.1.0.0
+github:              "prasmussen/vevapp"
+license:             BSD3
+author:              "Petter Rasmussen"
+maintainer:          "petter.rasmussen@gmail.com"
+copyright:           "2018 Petter Rasmussen"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/prasmussen/vevapp#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- safe
+- text
+- bytestring
+- time
+- warp
+- lucid
+- aeson
+- network
+- iproute
+- http-api-data
+- servant-lucid
+- servant-server
+
+default-extensions:
+- OverloadedStrings
+- FlexibleContexts
+- FlexibleInstances
+- GeneralizedNewtypeDeriving
+- TypeSynonymInstances
+- MultiParamTypeClasses
+- FunctionalDependencies
+- NoMonomorphismRestriction
+- GADTs
+- BangPatterns
+- DeriveGeneric
+- ScopedTypeVariables
+
+library:
+  source-dirs: src
+
+executables:
+  ip-app:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    - -O3
+    dependencies:
+    - ip-app
+
+tests:
+  ip-app-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - ip-app

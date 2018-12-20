@@ -1,0 +1,8 @@
+.stack-work/
+ip-app.cabal
+*~
+.idea
+*.iml
+out
+ghcid.log
+result
