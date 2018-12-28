@@ -1,5 +1,7 @@
 module Vevapp.ViewModel exposing
-    ( ViewModel(..)
+    ( ParsedModel
+    , ValidModel
+    , ViewModel(..)
     , new
     )
 
@@ -8,26 +10,47 @@ import Vevapp.BirthNumber as BirthNumber
 import Vevapp.Texts as Texts
 
 
+type alias ParsedModel =
+    { birthNumber : BirthNumber.ParsedBirthNumber
+    , currentDate : Date.Date
+    }
+
+
+type alias ValidModel =
+    { birthNumber : BirthNumber.BirthNumber
+    , currentDate : Date.Date
+    }
+
+
 type ViewModel
-    = ParseFailure BirthNumber.ParseFailure
+    = MissingCurrentDate
+    | ParseFailure BirthNumber.ParseFailure
     | InvalidNineDigitBirthNumber
     | WrongCheckDigits BirthNumber.ParsedBirthNumber
     | WrongBirthDate BirthNumber.ParsedBirthNumber
-    | ValidBirthNumber BirthNumber.BirthNumber
+    | ValidBirthNumber ValidModel
 
 
 type alias PartialModel a =
     { a
         | birthNumber : String
-        , currentDate : Date.Date
+        , currentDate : Maybe Date.Date
     }
 
 
 new : PartialModel a -> ViewModel
 new model =
     let
-        validate parsedBirthNumber =
-            case BirthNumber.validate model.currentDate parsedBirthNumber of
+        parse currentDate =
+            case BirthNumber.parse model.birthNumber of
+                Err failure ->
+                    ParseFailure failure
+
+                Ok parsedBirthNumber ->
+                    validate currentDate parsedBirthNumber
+
+        validate currentDate parsedBirthNumber =
+            case BirthNumber.validate currentDate parsedBirthNumber of
                 Err BirthNumber.MissingCheckDigits ->
                     let
                         maybeCheckDigits =
@@ -38,7 +61,7 @@ new model =
                             InvalidNineDigitBirthNumber
 
                         Just checkDigits ->
-                            validate (BirthNumber.setCheckDigits checkDigits parsedBirthNumber)
+                            validate currentDate (BirthNumber.setCheckDigits checkDigits parsedBirthNumber)
 
                 Err BirthNumber.WrongCheckDigits ->
                     WrongCheckDigits parsedBirthNumber
@@ -47,11 +70,14 @@ new model =
                     WrongBirthDate parsedBirthNumber
 
                 Ok birthNumber ->
-                    ValidBirthNumber birthNumber
+                    ValidBirthNumber
+                        { birthNumber = birthNumber
+                        , currentDate = currentDate
+                        }
     in
-    case BirthNumber.parse model.birthNumber of
-        Err failure ->
-            ParseFailure failure
+    case model.currentDate of
+        Nothing ->
+            MissingCurrentDate
 
-        Ok parsedBirthNumber ->
-            validate parsedBirthNumber
+        Just currentDate ->
+            parse currentDate

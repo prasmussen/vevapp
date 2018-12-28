@@ -10,6 +10,7 @@ import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
+import Task
 import Url
 import Vevapp.BirthNumber as BirthNumber
 import Vevapp.ResultRow as ResultRow
@@ -30,13 +31,14 @@ main =
 
 type alias Model =
     { birthNumber : String
-    , currentDate : Date.Date
+    , currentDate : Maybe Date.Date
     , navKey : Nav.Key
     }
 
 
 type Msg
-    = SetBirthNumber String
+    = SetCurrentDate Date.Date
+    | SetBirthNumber String
     | ClickedLink Browser.UrlRequest
     | UrlChange Url.Url
 
@@ -47,17 +49,21 @@ init flags url navKey =
         model =
             { birthNumber = "08109012069"
             , navKey = navKey
-
-            -- TODO: get real date
-            , currentDate = Date.fromOrdinalDate 2018 1
+            , currentDate = Nothing
             }
+
+        cmd =
+            Task.perform SetCurrentDate Date.today
     in
-    ( model, Cmd.none )
+    ( model, cmd )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        SetCurrentDate date ->
+            ( { model | currentDate = Just date }, Cmd.none )
+
         SetBirthNumber birthNumber ->
             ( { model | birthNumber = birthNumber }, Cmd.none )
 
@@ -88,6 +94,9 @@ content model =
 
         resultRows =
             case viewModelResult of
+                ViewModel.MissingCurrentDate ->
+                    []
+
                 ViewModel.ParseFailure failure ->
                     case failure of
                         BirthNumber.InvalidInput ->
@@ -110,8 +119,8 @@ content model =
                     [ Element.row [ Element.width Element.fill, Element.spacing 20 ] [ Element.text "Not a valid birthdate" ]
                     ]
 
-                ViewModel.ValidBirthNumber birthNumber ->
-                    [ Element.row [ Element.width Element.fill, Element.spacing 20 ] [ resultTable (ResultRow.fromBirthNumber birthNumber) ]
+                ViewModel.ValidBirthNumber viewModel ->
+                    [ Element.row [ Element.width Element.fill, Element.spacing 20 ] [ resultTable (ResultRow.fromViewModel viewModel) ]
                     ]
 
         rows =

@@ -1,4 +1,4 @@
-module Vevapp.ResultRow exposing (ResultRow, fromBirthNumber)
+module Vevapp.ResultRow exposing (ResultRow, fromViewModel)
 
 import Date
 import Vevapp.BirthNumber as BirthNumber
@@ -12,9 +12,15 @@ type alias ResultRow =
     }
 
 
-fromBirthNumber : BirthNumber.BirthNumber -> List ResultRow
-fromBirthNumber birthNumber =
+fromViewModel : ViewModel.ValidModel -> List ResultRow
+fromViewModel model =
     let
+        birthNumber =
+            model.birthNumber
+
+        currentDate =
+            model.currentDate
+
         checkDigits =
             let
                 digits =
@@ -44,8 +50,16 @@ fromBirthNumber birthNumber =
                 BirthNumber.Female ->
                     "Female"
 
+        birthDate =
+            BirthNumber.getBirthday birthNumber
+
         birthday =
-            Date.format "d MMMM y" (BirthNumber.getBirthday birthNumber)
+            Date.format "d MMMM y" birthDate
+
+        age =
+            Date.diff Date.Years birthDate currentDate
+                |> abs
+                |> String.fromInt
     in
     [ { key = Texts.BirthNumberT
       , value = BirthNumber.toString birthNumber
@@ -54,7 +68,7 @@ fromBirthNumber birthNumber =
       , value = birthday
       }
     , { key = Texts.AgeT
-      , value = "todo"
+      , value = age
       }
     , { key = Texts.GenderT
       , value = gender
