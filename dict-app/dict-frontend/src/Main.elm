@@ -11,9 +11,12 @@ import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
 import Html.Attributes as Attributes
+import Http
 import Url
+import Vevapp.Api.Lookup as Api
 import Vevapp.Command as Command
 import Vevapp.Dictionary as Dictionary
+import Vevapp.Entry as Entry
 import Vevapp.Language as Language
 import Vevapp.Query as Query
 import Vevapp.QueryType as QueryType
@@ -36,8 +39,17 @@ type alias Model =
     , queryString : String
     , languageDictPair : Dictionary.LanguageDictPair
     , dictionary : Dictionary.Dictionary
+    , entries : List Entry.Entry
     , navKey : Nav.Key
     }
+
+
+type alias QueryString =
+    String
+
+
+type alias EntriesResult =
+    Result Http.Error (List Entry.Entry)
 
 
 type Msg
@@ -45,8 +57,13 @@ type Msg
     | SetQueryString String
     | SetLanguageDictPair Dictionary.LanguageDictPair
     | SetDictionary Dictionary.Dictionary
+    | GotEntries QueryString EntriesResult
     | ClickedLink Browser.UrlRequest
     | UrlChange Url.Url
+
+
+
+-- TODO: load entries on init
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
@@ -60,6 +77,7 @@ init flags url navKey =
             , queryString = ""
             , languageDictPair = Dictionary.dictToLanguageDictPair defaultDict
             , dictionary = defaultDict
+            , entries = []
             , navKey = navKey
             }
 
@@ -93,11 +111,18 @@ update msg model =
     case msg of
         SetQueryType queryType ->
             ( { model | queryType = queryType }, Cmd.none )
+                |> Command.chain getEntries
                 |> Command.chain updateUrl
 
         SetQueryString queryString ->
-            ( { model | queryString = queryString }, Cmd.none )
-                |> Command.chain updateUrl
+            if String.isEmpty queryString then
+                ( { model | queryString = "", entries = [] }, Cmd.none )
+                    |> Command.chain updateUrl
+
+            else
+                ( { model | queryString = queryString }, Cmd.none )
+                    |> Command.chain getEntries
+                    |> Command.chain updateUrl
 
         SetLanguageDictPair languageDictPair ->
             let
@@ -105,6 +130,7 @@ update msg model =
                     Dictionary.dictFromLanguageDictPair languageDictPair
             in
             ( { model | languageDictPair = languageDictPair, dictionary = dictionary }, Cmd.none )
+                |> Command.chain getEntries
                 |> Command.chain updateUrl
 
         SetDictionary dictionary ->
@@ -113,7 +139,20 @@ update msg model =
                     Dictionary.dictToLanguageDictPair dictionary
             in
             ( { model | languageDictPair = languageDictPair, dictionary = dictionary }, Cmd.none )
+                |> Command.chain getEntries
                 |> Command.chain updateUrl
+
+        GotEntries queryString result ->
+            if queryString /= model.queryString then
+                ( model, Cmd.none )
+
+            else
+                case result of
+                    Ok entries ->
+                        ( { model | entries = entries }, Cmd.none )
+
+                    Err err ->
+                        ( model, Cmd.none )
 
         ClickedLink urlRequest ->
             case urlRequest of
@@ -387,6 +426,15 @@ toLanguageToggle model =
 borderColor : Element.Attribute Msg
 borderColor =
     Border.color (Element.rgb255 211 214 219)
+
+
+getEntries : Model -> Cmd Msg
+getEntries model =
+    if String.isEmpty model.queryString then
+        Cmd.none
+
+    else
+        Api.lookup (GotEntries model.queryString) model
 
 
 updateUrl : Model -> Cmd Msg
