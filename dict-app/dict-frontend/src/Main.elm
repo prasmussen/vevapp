@@ -14,6 +14,7 @@ import Html.Attributes as Attributes
 import Url
 import Vevapp.Command as Command
 import Vevapp.Dictionary as Dictionary
+import Vevapp.Language as Language
 import Vevapp.Query as Query
 import Vevapp.QueryType as QueryType
 import Vevapp.Texts as Texts
@@ -303,7 +304,7 @@ fromLanguageToggle model =
         toOption index languageDictPair =
             let
                 languageName =
-                    Dictionary.languageToFlag languageDictPair.from
+                    Language.toFlag languageDictPair.from
             in
             Element.el
                 (optionAttributes index languageDictPair)
@@ -371,7 +372,7 @@ toLanguageToggle model =
                 languageName =
                     Dictionary.toLanguagePair dictionary
                         |> Tuple.second
-                        |> Dictionary.languageToFlag
+                        |> Language.toFlag
             in
             Element.el
                 (optionAttributes index dictionary)

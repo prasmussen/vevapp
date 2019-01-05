@@ -1,18 +1,16 @@
 module Vevapp.Dictionary exposing
     ( Dictionary(..)
-    , Language(..)
     , LanguageDictPair
     , dictFromLanguageDictPair
     , dictToLanguageDictPair
     , fromString
     , languageDictPairs
-    , languageToFlag
-    , languageToString
     , toLanguagePair
     , toString
     )
 
 import Cons exposing (Cons)
+import Vevapp.Language as Language
 
 
 type Dictionary
@@ -31,115 +29,51 @@ type Dictionary
     | ES_UK
 
 
-type Language
-    = English
-    | Norwegian
-    | Swedish
-    | Deutsch
-    | French
-    | Spanish
-    | NorwegianMedical
-
-
-
--- TODO: move to Language.elm
-
-
-languageToString : Language -> String
-languageToString language =
-    case language of
-        English ->
-            "English"
-
-        Norwegian ->
-            "Norwegian"
-
-        Swedish ->
-            "Swedish"
-
-        Deutsch ->
-            "Deutsch"
-
-        French ->
-            "French"
-
-        Spanish ->
-            "Spanish"
-
-        NorwegianMedical ->
-            "Medical"
-
-
-languageToFlag : Language -> String
-languageToFlag language =
-    case language of
-        English ->
-            "🇬🇧"
-
-        Norwegian ->
-            "🇳🇴"
-
-        Swedish ->
-            "🇸🇪"
-
-        Deutsch ->
-            "🇩🇪"
-
-        French ->
-            "🇲🇫"
-
-        Spanish ->
-            "🇪🇸"
-
-        NorwegianMedical ->
-            "🇳🇴 ⚕"
-
-
-toLanguagePair : Dictionary -> ( Language, Language )
+toLanguagePair : Dictionary -> ( Language.Language, Language.Language )
 toLanguagePair dictionary =
     case dictionary of
         NO_UK ->
-            ( Norwegian, English )
+            ( Language.Norwegian, Language.English )
 
         NO_NO ->
-            ( Norwegian, Norwegian )
+            ( Language.Norwegian, Language.Norwegian )
 
         NO_DE ->
-            ( Norwegian, Deutsch )
+            ( Language.Norwegian, Language.Deutsch )
 
         NO_ME ->
-            ( Norwegian, NorwegianMedical )
+            ( Language.Norwegian, Language.NorwegianMedical )
 
         UK_NO ->
-            ( English, Norwegian )
+            ( Language.English, Language.Norwegian )
 
         UK_UK ->
-            ( English, English )
+            ( Language.English, Language.English )
 
         UK_FR ->
-            ( English, French )
+            ( Language.English, Language.French )
 
         UK_SE ->
-            ( English, Swedish )
+            ( Language.English, Language.Swedish )
 
         UK_ES ->
-            ( English, Spanish )
+            ( Language.English, Language.Spanish )
 
         SE_UK ->
-            ( Swedish, English )
+            ( Language.Swedish, Language.English )
 
         DE_UK ->
-            ( Deutsch, English )
+            ( Language.Deutsch, Language.English )
 
         FR_UK ->
-            ( French, English )
+            ( Language.French, Language.English )
 
         ES_UK ->
-            ( Spanish, English )
+            ( Language.Spanish, Language.English )
 
 
 type alias LanguageDictPair =
-    { from : Language
+    { from : Language.Language
     , to : Cons Dictionary
     }
 
@@ -283,42 +217,42 @@ dictFromLanguageDictPair languageDictPair =
 
 fromNorwegian : LanguageDictPair
 fromNorwegian =
-    { from = Norwegian
+    { from = Language.Norwegian
     , to = Cons.cons NO_UK [ NO_NO, NO_DE, NO_ME ]
     }
 
 
 fromEnglish : LanguageDictPair
 fromEnglish =
-    { from = English
+    { from = Language.English
     , to = Cons.cons UK_NO [ UK_UK, UK_FR, UK_SE, UK_ES ]
     }
 
 
 fromSwedish : LanguageDictPair
 fromSwedish =
-    { from = Swedish
+    { from = Language.Swedish
     , to = Cons.singleton SE_UK
     }
 
 
 fromDeutsch : LanguageDictPair
 fromDeutsch =
-    { from = Deutsch
+    { from = Language.Deutsch
     , to = Cons.singleton DE_UK
     }
 
 
 fromFrench : LanguageDictPair
 fromFrench =
-    { from = French
+    { from = Language.French
     , to = Cons.singleton FR_UK
     }
 
 
 fromSpanish : LanguageDictPair
 fromSpanish =
-    { from = Spanish
+    { from = Language.Spanish
     , to = Cons.singleton ES_UK
     }
 
