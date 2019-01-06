@@ -62,10 +62,6 @@ type Msg
     | UrlChange Url.Url
 
 
-
--- TODO: load entries on init
-
-
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url navKey =
     let
@@ -101,6 +97,7 @@ init flags url navKey =
     case Query.parseQuery url of
         Just query ->
             ( modelWithQuery query, Cmd.none )
+                |> Command.chain getEntries
 
         Nothing ->
             ( model, Cmd.none )
@@ -142,6 +139,7 @@ update msg model =
                 |> Command.chain getEntries
                 |> Command.chain updateUrl
 
+        -- TODO: save Result in entries (to handle error case)
         GotEntries queryString result ->
             if queryString /= model.queryString then
                 ( model, Cmd.none )
@@ -181,11 +179,12 @@ content model =
             , Element.row [ Element.width Element.fill ] [ toLanguageToggle model ]
             , Element.row [ Element.width Element.fill ] [ queryTypeToggle model ]
             , Element.row [ Element.width Element.fill, Element.spacing 20 ] [ queryInput model ]
+            , Element.row [ Element.width Element.fill, Element.spacing 20 ] [ entriesSection model ]
             ]
 
         column =
             Element.column
-                [ Element.width (Element.maximum 1200 Element.fill)
+                [ Element.width (Element.maximum 1000 Element.fill)
                 , Element.spacing 20
                 , Element.padding 20
                 , Element.centerX
@@ -420,6 +419,42 @@ toLanguageToggle model =
     Element.column [ Element.width Element.fill, Element.spacing 10 ]
         [ Element.el [ Font.bold ] (Texts.toElement Texts.ToLanguageT)
         , Element.row [ Element.width Element.fill, Element.spacing 0 ] options
+        ]
+
+
+entriesSection : Model -> Element Msg
+entriesSection model =
+    let
+        toEntry entry =
+            Element.column [ Element.width Element.fill, Element.spacing 10 ]
+                [ Element.el
+                    [ Font.size 26
+                    , Font.light
+                    , Font.color (Element.rgb255 34 35 36)
+                    , fontFamily
+                    ]
+                    (Element.text entry.word)
+                , Element.column [ Element.spacing 10 ] (List.map toTranslation entry.translations)
+                ]
+
+        toTranslation trans =
+            Element.el
+                [ Font.size 16
+                , Font.light
+                , Font.color (Element.rgb255 34 35 36)
+                , fontFamily
+                ]
+                (Element.text trans)
+    in
+    Element.column [ Element.width Element.fill, Element.spacing 30 ] (List.map toEntry model.entries)
+
+
+fontFamily =
+    Font.family
+        [ Font.typeface "Helvetica Neue"
+        , Font.typeface "Helvetica"
+        , Font.typeface "Arial"
+        , Font.sansSerif
         ]
 
 
