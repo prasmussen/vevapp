@@ -12,6 +12,7 @@ import Element.Input as Input
 import Html exposing (Html)
 import Html.Attributes as Attributes
 import Http
+import RemoteData
 import Url
 import Vevapp.Api.Lookup as Api
 import Vevapp.Command as Command
@@ -39,7 +40,7 @@ type alias Model =
     , queryString : String
     , languageDictPair : Dictionary.LanguageDictPair
     , dictionary : Dictionary.Dictionary
-    , entries : List Entry.Entry
+    , entries : RemoteData.WebData (List Entry.Entry)
     , navKey : Nav.Key
     }
 
@@ -48,16 +49,12 @@ type alias QueryString =
     String
 
 
-type alias EntriesResult =
-    Result Http.Error (List Entry.Entry)
-
-
 type Msg
     = SetQueryType QueryType.QueryType
     | SetQueryString String
     | SetLanguageDictPair Dictionary.LanguageDictPair
     | SetDictionary Dictionary.Dictionary
-    | GotEntries QueryString EntriesResult
+    | GotEntries QueryString (RemoteData.WebData (List Entry.Entry))
     | ClickedLink Browser.UrlRequest
     | UrlChange Url.Url
 
@@ -73,7 +70,7 @@ init flags url navKey =
             , queryString = ""
             , languageDictPair = Dictionary.dictToLanguageDictPair defaultDict
             , dictionary = defaultDict
-            , entries = []
+            , entries = RemoteData.NotAsked
             , navKey = navKey
             }
 
@@ -113,7 +110,7 @@ update msg model =
 
         SetQueryString queryString ->
             if String.isEmpty queryString then
-                ( { model | queryString = "", entries = [] }, Cmd.none )
+                ( { model | queryString = "", entries = RemoteData.NotAsked }, Cmd.none )
                     |> Command.chain updateUrl
 
             else
@@ -139,18 +136,12 @@ update msg model =
                 |> Command.chain getEntries
                 |> Command.chain updateUrl
 
-        -- TODO: save Result in entries (to handle error case)
-        GotEntries queryString result ->
+        GotEntries queryString webData ->
             if queryString /= model.queryString then
                 ( model, Cmd.none )
 
             else
-                case result of
-                    Ok entries ->
-                        ( { model | entries = entries }, Cmd.none )
-
-                    Err err ->
-                        ( model, Cmd.none )
+                ( { model | entries = webData }, Cmd.none )
 
         ClickedLink urlRequest ->
             case urlRequest of
@@ -424,29 +415,54 @@ toLanguageToggle model =
 
 entriesSection : Model -> Element Msg
 entriesSection model =
-    let
-        toEntry entry =
-            Element.column [ Element.width Element.fill, Element.spacing 10 ]
-                [ Element.el
-                    [ Font.size 26
-                    , Font.light
-                    , Font.color (Element.rgb255 34 35 36)
-                    , fontFamily
-                    ]
-                    (Element.text entry.word)
-                , Element.column [ Element.spacing 10 ] (List.map toTranslation entry.translations)
-                ]
+    case model.entries of
+        RemoteData.NotAsked ->
+            Element.none
 
-        toTranslation trans =
-            Element.el
-                [ Font.size 16
-                , Font.light
-                , Font.color (Element.rgb255 34 35 36)
-                , fontFamily
-                ]
-                (Element.text trans)
-    in
-    Element.column [ Element.width Element.fill, Element.spacing 30 ] (List.map toEntry model.entries)
+        RemoteData.Loading ->
+            Element.none
+
+        RemoteData.Failure error ->
+            case error of
+                Http.BadUrl url ->
+                    Element.text ("Invalid url was requested: " ++ url)
+
+                Http.Timeout ->
+                    Element.text "Request timed out"
+
+                Http.NetworkError ->
+                    Element.text "Network error"
+
+                Http.BadStatus code ->
+                    Element.text ("Api responded with status code " ++ String.fromInt code)
+
+                Http.BadBody err ->
+                    Element.text ("Failed to decode response body: " ++ err)
+
+        RemoteData.Success entries ->
+            let
+                toEntry entry =
+                    Element.column [ Element.width Element.fill, Element.spacing 10 ]
+                        [ Element.el
+                            [ Font.size 26
+                            , Font.light
+                            , Font.color (Element.rgb255 34 35 36)
+                            , fontFamily
+                            ]
+                            (Element.text entry.word)
+                        , Element.column [ Element.spacing 10 ] (List.map toTranslation entry.translations)
+                        ]
+
+                toTranslation trans =
+                    Element.el
+                        [ Font.size 16
+                        , Font.light
+                        , Font.color (Element.rgb255 34 35 36)
+                        , fontFamily
+                        ]
+                        (Element.text trans)
+            in
+            Element.column [ Element.width Element.fill, Element.spacing 30 ] (List.map toEntry entries)
 
 
 fontFamily =

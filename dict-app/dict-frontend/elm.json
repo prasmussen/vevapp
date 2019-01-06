@@ -13,6 +13,7 @@
             "elm/json": "1.1.2",
             "elm/url": "1.0.0",
             "hrldcpr/elm-cons": "3.0.1",
+            "krisajenkins/remotedata": "6.0.1",
             "mdgriffith/elm-ui": "1.1.0"
         },
         "indirect": {

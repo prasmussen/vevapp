@@ -2,6 +2,7 @@ module Vevapp.Api.Lookup exposing (lookup)
 
 import Http
 import Json.Decode as JD
+import RemoteData
 import Vevapp.Dictionary as Dictionary
 import Vevapp.Entry as Entry
 import Vevapp.Query as Query
@@ -16,7 +17,7 @@ type alias PartialModel a =
     }
 
 
-lookup : (Result Http.Error (List Entry.Entry) -> msg) -> PartialModel a -> Cmd msg
+lookup : (RemoteData.WebData (List Entry.Entry) -> msg) -> PartialModel a -> Cmd msg
 lookup toMsg model =
     let
         queryString =
@@ -30,8 +31,11 @@ lookup toMsg model =
 
         decoder =
             JD.list Entry.decoder
+
+        toWebDataMsg =
+            RemoteData.fromResult >> toMsg
     in
     Http.get
         { url = url
-        , expect = Http.expectJson toMsg decoder
+        , expect = Http.expectJson toWebDataMsg decoder
         }
