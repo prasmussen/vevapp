@@ -1,15 +1,10 @@
 module Vevapp.Dictionary exposing
     ( Dictionary(..)
-    , LanguageDictPair
-    , dictFromLanguageDictPair
-    , dictToLanguageDictPair
     , fromString
-    , languageDictPairs
     , toLanguagePair
     , toString
     )
 
-import Cons exposing (Cons)
 import Vevapp.Language as Language
 
 
@@ -27,55 +22,6 @@ type Dictionary
     | DE_UK
     | FR_UK
     | ES_UK
-
-
-toLanguagePair : Dictionary -> ( Language.Language, Language.Language )
-toLanguagePair dictionary =
-    case dictionary of
-        NO_UK ->
-            ( Language.Norwegian, Language.English )
-
-        NO_NO ->
-            ( Language.Norwegian, Language.Norwegian )
-
-        NO_DE ->
-            ( Language.Norwegian, Language.Deutsch )
-
-        NO_ME ->
-            ( Language.Norwegian, Language.NorwegianMedical )
-
-        UK_NO ->
-            ( Language.English, Language.Norwegian )
-
-        UK_UK ->
-            ( Language.English, Language.English )
-
-        UK_FR ->
-            ( Language.English, Language.French )
-
-        UK_SE ->
-            ( Language.English, Language.Swedish )
-
-        UK_ES ->
-            ( Language.English, Language.Spanish )
-
-        SE_UK ->
-            ( Language.Swedish, Language.English )
-
-        DE_UK ->
-            ( Language.Deutsch, Language.English )
-
-        FR_UK ->
-            ( Language.French, Language.English )
-
-        ES_UK ->
-            ( Language.Spanish, Language.English )
-
-
-type alias LanguageDictPair =
-    { from : Language.Language
-    , to : Cons Dictionary
-    }
 
 
 toString : Dictionary -> String
@@ -167,102 +113,44 @@ fromString str =
             Nothing
 
 
-dictToLanguageDictPair : Dictionary -> LanguageDictPair
-dictToLanguageDictPair dict =
-    case dict of
+toLanguagePair : Dictionary -> ( Language.Language, Language.Language )
+toLanguagePair dictionary =
+    case dictionary of
         NO_UK ->
-            fromNorwegian
+            ( Language.Norwegian, Language.English )
 
         NO_NO ->
-            fromNorwegian
+            ( Language.Norwegian, Language.Norwegian )
 
         NO_DE ->
-            fromNorwegian
+            ( Language.Norwegian, Language.Deutsch )
 
         NO_ME ->
-            fromNorwegian
+            ( Language.Norwegian, Language.NorwegianMedical )
 
         UK_NO ->
-            fromEnglish
+            ( Language.English, Language.Norwegian )
 
         UK_UK ->
-            fromEnglish
+            ( Language.English, Language.English )
 
         UK_FR ->
-            fromEnglish
+            ( Language.English, Language.French )
 
         UK_SE ->
-            fromEnglish
+            ( Language.English, Language.Swedish )
 
         UK_ES ->
-            fromEnglish
+            ( Language.English, Language.Spanish )
 
         SE_UK ->
-            fromSwedish
+            ( Language.Swedish, Language.English )
 
         DE_UK ->
-            fromDeutsch
+            ( Language.Deutsch, Language.English )
 
         FR_UK ->
-            fromFrench
+            ( Language.French, Language.English )
 
         ES_UK ->
-            fromSpanish
-
-
-dictFromLanguageDictPair : LanguageDictPair -> Dictionary
-dictFromLanguageDictPair languageDictPair =
-    Cons.head languageDictPair.to
-
-
-fromNorwegian : LanguageDictPair
-fromNorwegian =
-    { from = Language.Norwegian
-    , to = Cons.cons NO_UK [ NO_NO, NO_DE, NO_ME ]
-    }
-
-
-fromEnglish : LanguageDictPair
-fromEnglish =
-    { from = Language.English
-    , to = Cons.cons UK_NO [ UK_UK, UK_FR, UK_SE, UK_ES ]
-    }
-
-
-fromSwedish : LanguageDictPair
-fromSwedish =
-    { from = Language.Swedish
-    , to = Cons.singleton SE_UK
-    }
-
-
-fromDeutsch : LanguageDictPair
-fromDeutsch =
-    { from = Language.Deutsch
-    , to = Cons.singleton DE_UK
-    }
-
-
-fromFrench : LanguageDictPair
-fromFrench =
-    { from = Language.French
-    , to = Cons.singleton FR_UK
-    }
-
-
-fromSpanish : LanguageDictPair
-fromSpanish =
-    { from = Language.Spanish
-    , to = Cons.singleton ES_UK
-    }
-
-
-languageDictPairs : List LanguageDictPair
-languageDictPairs =
-    [ fromNorwegian
-    , fromEnglish
-    , fromSwedish
-    , fromDeutsch
-    , fromFrench
-    , fromSpanish
-    ]
+            ( Language.Spanish, Language.English )

@@ -19,6 +19,7 @@ import Vevapp.Command as Command
 import Vevapp.Dictionary as Dictionary
 import Vevapp.Entry as Entry
 import Vevapp.Language as Language
+import Vevapp.LanguageDictionaryMapping as LangDictMap
 import Vevapp.Query as Query
 import Vevapp.QueryType as QueryType
 import Vevapp.Texts as Texts
@@ -36,13 +37,13 @@ main =
 
 
 
--- TODO: Only have one field with languageDictPair and dictionary to avoid manually syncing their state
+-- TODO: Only have one field with langDictMap and dictionary to avoid manually syncing their state
 
 
 type alias Model =
     { queryType : QueryType.QueryType
     , queryString : String
-    , languageDictPair : Dictionary.LanguageDictPair
+    , langDictMap : LangDictMap.LanguageDictionaryMapping
     , dictionary : Dictionary.Dictionary
     , entries : RemoteData.WebData (List Entry.Entry)
     , navKey : Nav.Key
@@ -56,7 +57,7 @@ type alias QueryString =
 type Msg
     = SetQueryType QueryType.QueryType
     | SetQueryString String
-    | SetLanguageDictPair Dictionary.LanguageDictPair
+    | SetLangDictMap LangDictMap.LanguageDictionaryMapping
     | SetDictionary Dictionary.Dictionary
     | GotEntries QueryString (RemoteData.WebData (List Entry.Entry))
     | ClickedLink Browser.UrlRequest
@@ -72,7 +73,7 @@ init flags url navKey =
         model =
             { queryType = QueryType.Prefix
             , queryString = ""
-            , languageDictPair = Dictionary.dictToLanguageDictPair defaultDict
+            , langDictMap = LangDictMap.fromDictionary defaultDict
             , dictionary = defaultDict
             , entries = RemoteData.NotAsked
             , navKey = navKey
@@ -83,8 +84,8 @@ init flags url navKey =
                 dictionary =
                     Maybe.withDefault model.dictionary query.dictionary
 
-                languageDictPair =
-                    Dictionary.dictToLanguageDictPair dictionary
+                langDictMap =
+                    LangDictMap.fromDictionary dictionary
             in
             { model
                 | queryType =
@@ -92,7 +93,7 @@ init flags url navKey =
                 , queryString =
                     Maybe.withDefault model.queryString query.queryString
                 , dictionary = dictionary
-                , languageDictPair = languageDictPair
+                , langDictMap = langDictMap
             }
     in
     case Query.parseQuery url of
@@ -122,21 +123,21 @@ update msg model =
                     |> Command.chain getEntries
                     |> Command.chain updateUrl
 
-        SetLanguageDictPair languageDictPair ->
+        SetLangDictMap langDictMap ->
             let
                 dictionary =
-                    Dictionary.dictFromLanguageDictPair languageDictPair
+                    LangDictMap.toDictionary langDictMap
             in
-            ( { model | languageDictPair = languageDictPair, dictionary = dictionary }, Cmd.none )
+            ( { model | langDictMap = langDictMap, dictionary = dictionary }, Cmd.none )
                 |> Command.chain getEntries
                 |> Command.chain updateUrl
 
         SetDictionary dictionary ->
             let
-                languageDictPair =
-                    Dictionary.dictToLanguageDictPair dictionary
+                langDictMap =
+                    LangDictMap.fromDictionary dictionary
             in
-            ( { model | languageDictPair = languageDictPair, dictionary = dictionary }, Cmd.none )
+            ( { model | langDictMap = langDictMap, dictionary = dictionary }, Cmd.none )
                 |> Command.chain getEntries
                 |> Command.chain updateUrl
 
@@ -286,11 +287,11 @@ queryTypeToggle model =
 fromLanguageToggle : Model -> Element Msg
 fromLanguageToggle model =
     let
-        optionAttributes : Int -> Dictionary.LanguageDictPair -> List (Element.Attribute Msg)
-        optionAttributes index languageDictPair =
+        optionAttributes : Int -> LangDictMap.LanguageDictionaryMapping -> List (Element.Attribute Msg)
+        optionAttributes index langDictMap =
             let
                 isSelected =
-                    languageDictPair == model.languageDictPair
+                    langDictMap == model.langDictMap
 
                 borderAttr =
                     if index == 0 then
@@ -316,7 +317,7 @@ fromLanguageToggle model =
                     , Element.padding 13
                     , Font.size 18
                     , Element.pointer
-                    , Events.onClick (SetLanguageDictPair languageDictPair)
+                    , Events.onClick (SetLangDictMap langDictMap)
                     ]
             in
             if isSelected then
@@ -332,15 +333,15 @@ fromLanguageToggle model =
                        ]
 
         options =
-            List.indexedMap toOption Dictionary.languageDictPairs
+            List.indexedMap toOption LangDictMap.all
 
-        toOption index languageDictPair =
+        toOption index langDictMap =
             let
                 languageName =
-                    Language.toFlag languageDictPair.from
+                    Language.toFlag langDictMap.from
             in
             Element.el
-                (optionAttributes index languageDictPair)
+                (optionAttributes index langDictMap)
                 (Element.el [ Element.centerX, Element.centerY ] (Element.text languageName))
     in
     Element.column [ Element.width Element.fill, Element.spacing 10 ]
@@ -398,7 +399,7 @@ toLanguageToggle model =
                        ]
 
         options =
-            List.indexedMap toOption (Cons.toList model.languageDictPair.to)
+            List.indexedMap toOption (Cons.toList model.langDictMap.to)
 
         toOption index dictionary =
             let
