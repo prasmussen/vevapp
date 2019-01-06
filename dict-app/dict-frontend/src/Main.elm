@@ -35,6 +35,10 @@ main =
         }
 
 
+
+-- TODO: Only have one field with languageDictPair and dictionary to avoid manually syncing their state
+
+
 type alias Model =
     { queryType : QueryType.QueryType
     , queryString : String
@@ -248,8 +252,8 @@ queryTypeToggle model =
             in
             if isSelected then
                 sharedAttrs
-                    ++ [ Background.color (Element.rgb255 31 200 219)
-                       , Font.color (Element.rgb255 255 255 255)
+                    ++ [ Background.color (Element.rgba255 70 70 70 0.1)
+                       , Font.color (Element.rgb255 0 0 0)
                        ]
 
             else
@@ -317,8 +321,8 @@ fromLanguageToggle model =
             in
             if isSelected then
                 sharedAttrs
-                    ++ [ Background.color (Element.rgb255 31 200 219)
-                       , Font.color (Element.rgb255 255 255 255)
+                    ++ [ Background.color (Element.rgba255 70 70 70 0.1)
+                       , Font.color (Element.rgb255 0 0 0)
                        ]
 
             else
@@ -383,8 +387,8 @@ toLanguageToggle model =
             in
             if isSelected then
                 sharedAttrs
-                    ++ [ Background.color (Element.rgb255 31 200 219)
-                       , Font.color (Element.rgb255 255 255 255)
+                    ++ [ Background.color (Element.rgba255 70 70 70 0.1)
+                       , Font.color (Element.rgb255 0 0 0)
                        ]
 
             else
