@@ -458,13 +458,13 @@ entriesSection model =
                         ]
 
                 toTranslation trans =
-                    Element.el
+                    Element.paragraph
                         [ Font.size 16
                         , Font.light
                         , Font.color (Element.rgb255 34 35 36)
                         , fontFamily
                         ]
-                        (Element.text trans)
+                        [ Element.text trans ]
             in
             Element.column [ Element.width Element.fill, Element.spacing 30 ] (List.map toEntry entries)
 
