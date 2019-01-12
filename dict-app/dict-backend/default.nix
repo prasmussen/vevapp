@@ -6,6 +6,7 @@ let
   cmd =
     ''
     export GOPATH="$(pwd)"
+    mkdir -p $out
     go build -o $out/dict-backend ${src}/*.go
     '';
 in
