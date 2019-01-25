@@ -8,6 +8,7 @@ import Time
 import Vevapp.Moment.Clock as Clock exposing (Clock)
 import Vevapp.Moment.Month as Month
 import Vevapp.Moment.MonthDay as MonthDay
+import Vevapp.Moment.Parser as ParserExtra
 import Vevapp.Moment.TimeUnit as TimeUnit exposing (TimeUnit)
 import Vevapp.Moment.Weekday as Weekday
 import Vevapp.Moment.Year as Year
@@ -22,13 +23,14 @@ type Moment
     | DateTime Int Time.Month Int Clock
     | Next Time.Weekday (Maybe Clock)
     | Tomorrow (Maybe Clock)
-    | Unknown String
 
 
-parse : String -> Moment
+parse : String -> Maybe Moment
 parse input =
-    let
-        parsers =
+    input
+        |> String.trim
+        |> String.toLower
+        |> ParserExtra.try
             [ valueUnitParser
             , inParser
             , fromNowParser
@@ -51,33 +53,6 @@ parse input =
             , ddmmyyyyParser
             , ddmmyyyyClockParser
             ]
-
-        preparedInput =
-            input
-                |> String.trim
-                |> String.toLower
-    in
-    case try parsers preparedInput of
-        Just res ->
-            res
-
-        Nothing ->
-            Unknown preparedInput
-
-
-try : List (Parser a) -> String -> Maybe a
-try parsers input =
-    case parsers of
-        parser :: rest ->
-            case Parser.run parser input of
-                Ok res ->
-                    Just res
-
-                Err _ ->
-                    try rest input
-
-        [] ->
-            Nothing
 
 
 tomorrowParser : Parser Moment

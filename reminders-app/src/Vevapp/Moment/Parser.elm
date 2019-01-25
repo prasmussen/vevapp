@@ -1,6 +1,24 @@
-module Vevapp.Moment.Parser exposing (paddedInt)
+module Vevapp.Moment.Parser exposing
+    ( paddedInt
+    , try
+    )
 
 import Parser exposing ((|.), (|=), Parser)
+
+
+try : List (Parser a) -> String -> Maybe a
+try parsers input =
+    case parsers of
+        parser :: rest ->
+            case Parser.run parser input of
+                Ok res ->
+                    Just res
+
+                Err _ ->
+                    try rest input
+
+        [] ->
+            Nothing
 
 
 paddedInt : Int -> Parser Int
