@@ -2,7 +2,6 @@ module Main exposing (main)
 
 import Browser
 import Browser.Extra as BrowserExtra
-import Browser.Navigation as Nav
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
@@ -10,11 +9,9 @@ import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
-import Html.Attributes as Attrs
-import Html.Events as Events
 import Iso8601
-import Json.Decode as Decode
-import Random
+import Json.Decode as JD
+import RemoteData exposing (RemoteData)
 import Task exposing (Task)
 import Time
 import Url
@@ -43,6 +40,7 @@ type alias Model =
     { time : Time.Posix
     , title : String
     , when : String
+    , reminders : RemoteData String (List Reminder)
     }
 
 
@@ -64,6 +62,7 @@ init maybeUser =
             { time = time
             , title = ""
             , when = ""
+            , reminders = RemoteData.NotAsked
             }
 
         cmd =
@@ -94,7 +93,7 @@ update msg model =
                 cmd =
                     Port.send (Port.ListReminders options)
             in
-            ( model, cmd )
+            ( { model | reminders = RemoteData.Loading }, cmd )
 
         FromJavascript jsMsg ->
             updateFromJavascript jsMsg model
@@ -111,10 +110,10 @@ updateFromJavascript : Port.MessageFromJavascript -> Model -> ( Model, Cmd Msg )
 updateFromJavascript msg model =
     case msg of
         Port.ListRemindersSuccess reminders ->
-            ( model, Cmd.none )
+            ( { model | reminders = RemoteData.Success reminders }, Cmd.none )
 
         Port.ListRemindersFailure err ->
-            ( model, Cmd.none )
+            ( { model | reminders = RemoteData.Failure err }, Cmd.none )
 
 
 listRemindersOptions : Time.Posix -> Reminder.ListOptions
@@ -147,6 +146,7 @@ view model =
         rows =
             [ Element.row [ Element.width Element.fill, Element.spacing 20 ] [ titleInput model ]
             , Element.row [ Element.width Element.fill, Element.spacing 20 ] [ whenInput model ]
+            , Element.row [ Element.width Element.fill, Element.spacing 20 ] [ viewReminders model ]
             ]
 
         column =
@@ -202,6 +202,88 @@ whenInput model =
         , placeholder = Nothing
         , label = label
         }
+
+
+viewReminders : Model -> Element Msg
+viewReminders model =
+    let
+        rowPadding =
+            Element.padding 10
+
+        rowColor index =
+            if modBy 2 index == 0 then
+                Background.color (Element.rgb255 255 255 255)
+
+            else
+                Background.color (Element.rgb255 245 247 250)
+
+        leftColumnView index reminder =
+            Element.el
+                [ rowColor index
+                , Font.bold
+                , Border.widthEach
+                    { bottom = 1
+                    , left = 1
+                    , right = 1
+                    , top = 0
+                    }
+                , borderColor
+                , rowPadding
+                ]
+                (Element.text reminder.summary)
+
+        rightColumnView index reminder =
+            Element.el
+                [ rowColor index
+                , rowPadding
+                , Border.widthEach
+                    { bottom = 1
+                    , left = 0
+                    , right = 1
+                    , top = 0
+                    }
+                , borderColor
+                ]
+                (Element.text (Iso8601.fromTime reminder.startDate))
+
+        table =
+            case model.reminders of
+                RemoteData.NotAsked ->
+                    Element.text "Not asked"
+
+                RemoteData.Loading ->
+                    Element.text "Loading..."
+
+                RemoteData.Failure err ->
+                    Element.text ("Failed to load reminders: " ++ err)
+
+                RemoteData.Success reminders ->
+                    Element.indexedTable
+                        [ Border.widthEach
+                            { bottom = 0
+                            , left = 0
+                            , right = 0
+                            , top = 1
+                            }
+                        , borderColor
+                        ]
+                        { data = reminders
+                        , columns =
+                            [ { header = Element.none
+                              , width = Element.fill
+                              , view = leftColumnView
+                              }
+                            , { header = Element.none
+                              , width = Element.fill
+                              , view = rightColumnView
+                              }
+                            ]
+                        }
+    in
+    Element.column [ Element.width Element.fill, Element.spacing 10 ]
+        [ Element.el [ Font.bold ] (Element.text "Upcoming reminders")
+        , table
+        ]
 
 
 borderColor : Element.Attribute Msg

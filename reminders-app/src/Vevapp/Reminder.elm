@@ -6,14 +6,16 @@ module Vevapp.Reminder exposing
     , encodeListOptions
     )
 
+import Iso8601
 import Json.Decode as JD
 import Json.Encode as JE
+import Time
 
 
 type alias Reminder =
     { summary : String
     , htmlLink : String
-    , startDate : String
+    , startDate : Time.Posix
     }
 
 
@@ -27,7 +29,7 @@ decoder =
     JD.map3 Reminder
         (JD.field "summary" JD.string)
         (JD.field "htmlLink" JD.string)
-        (JD.at [ "start", "dateTime" ] JD.string)
+        (JD.at [ "start", "dateTime" ] Iso8601.decoder)
 
 
 type alias ListOptions =
