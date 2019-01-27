@@ -12,11 +12,16 @@ import Element.Input as Input
 import Html exposing (Html)
 import Html.Attributes as Attrs
 import Html.Events as Events
+import Iso8601
+import Json.Decode as Decode
 import Random
 import Task exposing (Task)
 import Time
 import Url
 import Vevapp.Moment as Moment exposing (Moment)
+import Vevapp.Port as Port
+import Vevapp.Reminder as Reminder exposing (Reminder)
+import Vevapp.User as User exposing (User)
 
 
 main =
@@ -43,10 +48,11 @@ type Msg
     | UrlChange Url.Url
     | SetTitle String
     | SetWhen String
+    | Init
 
 
-init : () -> Url.Url -> Nav.Key -> ( Task Never Model, Cmd Msg )
-init flags url navKey =
+init : Maybe User -> Url.Url -> Nav.Key -> ( Task Never Model, Cmd Msg )
+init maybeUser url navKey =
     let
         task =
             Task.map toModel Time.now
@@ -56,8 +62,11 @@ init flags url navKey =
             , title = ""
             , when = ""
             }
+
+        cmd =
+            Task.perform (\_ -> Init) (Task.succeed ())
     in
-    ( task, Cmd.none )
+    ( task, cmd )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -84,6 +93,35 @@ update msg model =
                         |> Debug.log "moment"
             in
             ( { model | when = when }, Cmd.none )
+
+        Init ->
+            let
+                options =
+                    listRemindersOptions model.time
+
+                cmd =
+                    Port.send (Port.ListReminders options)
+            in
+            ( model, cmd )
+
+
+listRemindersOptions : Time.Posix -> Reminder.ListOptions
+listRemindersOptions minTime =
+    let
+        maxTime =
+            minTime
+                |> Time.posixToMillis
+                |> (\ms -> ms + 365 * 24 * 60 * 60 * 1000)
+                |> Time.millisToPosix
+    in
+    { calendarId = "primary"
+    , maxResults = 100
+    , timeMin = Iso8601.fromTime minTime
+    , timeMax = Iso8601.fromTime maxTime
+    , orderBy = "startTime"
+    , singleEvents = True
+    , privateExtendedProperty = "isReminder=true"
+    }
 
 
 pageTitle : String
