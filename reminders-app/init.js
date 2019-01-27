@@ -35,30 +35,21 @@ function init(auth, err) {
         //sendUser(auth);
     });
 
+
 }
 
 function update(msg, model) {
     switch (msg.tag) {
         case 'ListReminders':
-            //var options = msg.data;
+            var options = msg.data;
 
-            var now = new Date();
-            var options = {
-                calendarId: "primary",
-                maxResults: 250,
-                timeMin: now.toISOString(),
-                orderBy: "startTime",
-                singleEvents: true,
-                privateExtendedProperty: "isReminder=true"
-            };
-
-            console.log(options);
             gapi.client.calendar.events.list(options).then(function(res) {
-                console.log("success", res);
-                //update({tag: "ListRemindersSuccess", data: res}, model);
+                console.log("success", res.result);
+                model.app.ports.fromJavascript.send(toMsg("ListRemindersSuccess", res.result));
             }, function(res) {
                 console.log("failure", res);
-                //update({tag: "ListRemindersFailure", data: res}, model);
+                // TODO: send res.result instead
+                model.app.ports.fromJavascript.send(toMsg("ListRemindersFailure", res.result.error.message));
             });
             break;
 
@@ -67,6 +58,13 @@ function update(msg, model) {
     }
 }
 
+
+function toMsg(tag, data) {
+    return {
+        tag: tag,
+        data: data,
+    };
+}
 
 function listReminders(successTag, errorTag, options) {
     var now = new Date();

@@ -1,6 +1,7 @@
 module Vevapp.Reminder exposing
     ( ListOptions
     , Reminder
+    , apiResponseDecoder
     , decoder
     , encodeListOptions
     )
@@ -10,18 +11,23 @@ import Json.Encode as JE
 
 
 type alias Reminder =
-    { title : String
-    , link : String
+    { summary : String
+    , htmlLink : String
     , startDate : String
     }
+
+
+apiResponseDecoder : JD.Decoder (List Reminder)
+apiResponseDecoder =
+    JD.at [ "items" ] (JD.list decoder)
 
 
 decoder : JD.Decoder Reminder
 decoder =
     JD.map3 Reminder
-        (JD.field "title" JD.string)
-        (JD.field "link" JD.string)
-        (JD.field "startDate" JD.string)
+        (JD.field "summary" JD.string)
+        (JD.field "htmlLink" JD.string)
+        (JD.at [ "start", "dateTime" ] JD.string)
 
 
 type alias ListOptions =

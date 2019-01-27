@@ -30,8 +30,13 @@ main =
         , loadingView = loadingView
         , view = view
         , update = update
-        , subscriptions = \_ -> Sub.none
+        , subscriptions = subscriptions
         }
+
+
+subscriptions : Maybe Model -> Sub Msg
+subscriptions _ =
+    Port.receive FromJavascript FromJavascriptError
 
 
 type alias Model =
@@ -45,6 +50,8 @@ type Msg
     = SetTitle String
     | SetWhen String
     | Init
+    | FromJavascript Port.MessageFromJavascript
+    | FromJavascriptError String
 
 
 init : Maybe User -> ( Task Never Model, Cmd Msg )
@@ -88,6 +95,26 @@ update msg model =
                     Port.send (Port.ListReminders options)
             in
             ( model, cmd )
+
+        FromJavascript jsMsg ->
+            updateFromJavascript jsMsg model
+
+        FromJavascriptError err ->
+            let
+                _ =
+                    Debug.log "FromJavascriptError" err
+            in
+            ( model, Cmd.none )
+
+
+updateFromJavascript : Port.MessageFromJavascript -> Model -> ( Model, Cmd Msg )
+updateFromJavascript msg model =
+    case msg of
+        Port.ListRemindersSuccess reminders ->
+            ( model, Cmd.none )
+
+        Port.ListRemindersFailure err ->
+            ( model, Cmd.none )
 
 
 listRemindersOptions : Time.Posix -> Reminder.ListOptions

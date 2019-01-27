@@ -50,7 +50,7 @@ applicationWithTask :
     , loadingView : Browser.Document msg
     , view : model -> Browser.Document msg
     , update : msg -> model -> ( model, Cmd msg )
-    , subscriptions : model -> Sub msg
+    , subscriptions : Maybe model -> Sub msg
     , onUrlRequest : Browser.UrlRequest -> msg
     , onUrlChange : Url.Url -> msg
     }
@@ -108,10 +108,10 @@ applicationWithTask wrapped =
         subscriptions model =
             case model of
                 TaskRunning _ ->
-                    Sub.none
+                    Sub.map TaskWrapped (wrapped.subscriptions Nothing)
 
                 TaskComplete wrappedModel ->
-                    Sub.map TaskWrapped (wrapped.subscriptions wrappedModel)
+                    Sub.map TaskWrapped (wrapped.subscriptions (Just wrappedModel))
 
         onUrlRequest req =
             TaskWrapped (wrapped.onUrlRequest req)
@@ -196,7 +196,7 @@ elementWithTask :
     , view : model -> Html msg
     , loadingView : Html msg
     , update : msg -> model -> ( model, Cmd msg )
-    , subscriptions : model -> Sub msg
+    , subscriptions : Maybe model -> Sub msg
     }
     -> Program flags (TaskModel model msg) (TaskMsg model msg)
 elementWithTask wrapped =
@@ -244,10 +244,10 @@ elementWithTask wrapped =
         subscriptions model =
             case model of
                 TaskRunning _ ->
-                    Sub.none
+                    Sub.map TaskWrapped (wrapped.subscriptions Nothing)
 
                 TaskComplete wrappedModel ->
-                    Sub.map TaskWrapped (wrapped.subscriptions wrappedModel)
+                    Sub.map TaskWrapped (wrapped.subscriptions (Just wrappedModel))
     in
     Browser.element
         { init = init
