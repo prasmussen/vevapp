@@ -15,17 +15,8 @@ function init(auth, err) {
         app: app,
     };
 
-    setTimeout(function() {
-        //console.log("sign out");
-        //auth.signIn();
-    }, 5000);
-
-    //setTimeout(function() {
-    //    auth.signIn();
-    //}, 5000);
-
     app.ports.toJavascript.subscribe(function(msg) {
-        //update(msg, model);
+        update(msg, model);
     });
 
     // Listen for sign in events from elm

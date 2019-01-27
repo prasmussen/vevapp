@@ -25,14 +25,12 @@ import Vevapp.User as User exposing (User)
 
 
 main =
-    BrowserExtra.applicationWithTask
+    BrowserExtra.elementWithTask
         { init = init
         , loadingView = loadingView
         , view = view
         , update = update
         , subscriptions = \_ -> Sub.none
-        , onUrlRequest = ClickedLink
-        , onUrlChange = UrlChange
         }
 
 
@@ -44,15 +42,13 @@ type alias Model =
 
 
 type Msg
-    = ClickedLink Browser.UrlRequest
-    | UrlChange Url.Url
-    | SetTitle String
+    = SetTitle String
     | SetWhen String
     | Init
 
 
-init : Maybe User -> Url.Url -> Nav.Key -> ( Task Never Model, Cmd Msg )
-init maybeUser url navKey =
+init : Maybe User -> ( Task Never Model, Cmd Msg )
+init maybeUser =
     let
         task =
             Task.map toModel Time.now
@@ -72,17 +68,6 @@ init maybeUser url navKey =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        ClickedLink urlRequest ->
-            case urlRequest of
-                Browser.Internal url ->
-                    ( model, Nav.load (Url.toString url) )
-
-                Browser.External url ->
-                    ( model, Nav.load url )
-
-        UrlChange url ->
-            ( model, Cmd.none )
-
         SetTitle title ->
             ( { model | title = title }, Cmd.none )
 
@@ -124,27 +109,13 @@ listRemindersOptions minTime =
     }
 
 
-pageTitle : String
-pageTitle =
-    "Reminders"
-
-
-loadingView : Browser.Document Msg
+loadingView : Html Msg
 loadingView =
-    { title = pageTitle
-    , body = []
-    }
+    Html.text ""
 
 
-view : Model -> Browser.Document Msg
+view : Model -> Html Msg
 view model =
-    { title = pageTitle
-    , body = [ content model ]
-    }
-
-
-content : Model -> Html Msg
-content model =
     let
         rows =
             [ Element.row [ Element.width Element.fill, Element.spacing 20 ] [ titleInput model ]

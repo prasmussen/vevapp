@@ -1,11 +1,12 @@
 module Browser.Extra exposing
     ( applicationWithDecoder
     , applicationWithTask
+    , elementWithTask
     )
 
 import Browser
 import Browser.Navigation as Navigation
-import Html
+import Html exposing (Html)
 import Json.Decode as JD
 import Task exposing (Task)
 import Url
@@ -187,4 +188,70 @@ applicationWithDecoder wrapped flagsDecoder =
         , subscriptions = subscriptions
         , onUrlRequest = wrapped.onUrlRequest
         , onUrlChange = wrapped.onUrlChange
+        }
+
+
+elementWithTask :
+    { init : flags -> ( Task Never model, Cmd msg )
+    , view : model -> Html msg
+    , loadingView : Html msg
+    , update : msg -> model -> ( model, Cmd msg )
+    , subscriptions : model -> Sub msg
+    }
+    -> Program flags (TaskModel model msg) (TaskMsg model msg)
+elementWithTask wrapped =
+    let
+        init flags =
+            let
+                ( task, wrappedCmd ) =
+                    wrapped.init flags
+
+                cmd =
+                    Task.perform TaskResult task
+            in
+            ( TaskRunning wrappedCmd, cmd )
+
+        view model =
+            case model of
+                TaskRunning _ ->
+                    Html.map TaskWrapped wrapped.loadingView
+
+                TaskComplete wrappedModel ->
+                    Html.map TaskWrapped (wrapped.view wrappedModel)
+
+        update msg model =
+            case model of
+                TaskRunning initialCmd ->
+                    case msg of
+                        TaskResult result ->
+                            ( TaskComplete result, Cmd.map TaskWrapped initialCmd )
+
+                        TaskWrapped _ ->
+                            ( model, Cmd.none )
+
+                TaskComplete wrappedModel ->
+                    case msg of
+                        TaskResult _ ->
+                            ( model, Cmd.none )
+
+                        TaskWrapped wrappedMsg ->
+                            let
+                                ( newModel, cmd ) =
+                                    wrapped.update wrappedMsg wrappedModel
+                            in
+                            ( TaskComplete newModel, Cmd.map TaskWrapped cmd )
+
+        subscriptions model =
+            case model of
+                TaskRunning _ ->
+                    Sub.none
+
+                TaskComplete wrappedModel ->
+                    Sub.map TaskWrapped (wrapped.subscriptions wrappedModel)
+    in
+    Browser.element
+        { init = init
+        , view = view
+        , update = update
+        , subscriptions = subscriptions
         }
