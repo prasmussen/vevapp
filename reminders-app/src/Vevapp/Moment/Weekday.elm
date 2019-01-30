@@ -1,4 +1,7 @@
-module Vevapp.Moment.Weekday exposing (parser)
+module Vevapp.Moment.Weekday exposing
+    ( parser
+    , toString
+    )
 
 import Parser exposing ((|.), (|=), Parser)
 import Time
@@ -15,6 +18,31 @@ parser =
         , saturdayParser
         , sundayParser
         ]
+
+
+toString : Time.Weekday -> String
+toString weekday =
+    case weekday of
+        Time.Mon ->
+            "Monday"
+
+        Time.Tue ->
+            "Tuesday"
+
+        Time.Wed ->
+            "Wednesday"
+
+        Time.Thu ->
+            "Thursday"
+
+        Time.Fri ->
+            "Friday"
+
+        Time.Sat ->
+            "Saturday"
+
+        Time.Sun ->
+            "Sunday"
 
 
 mondayParser : Parser Time.Weekday

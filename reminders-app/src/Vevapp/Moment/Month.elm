@@ -1,5 +1,6 @@
 module Vevapp.Moment.Month exposing
     ( numberParser
+    , toString
     , wordParser
     )
 
@@ -24,6 +25,46 @@ wordParser =
         , novemberParser
         , decemberParser
         ]
+
+
+toString : Time.Month -> String
+toString month =
+    case month of
+        Time.Jan ->
+            "January"
+
+        Time.Feb ->
+            "February"
+
+        Time.Mar ->
+            "March"
+
+        Time.Apr ->
+            "April"
+
+        Time.May ->
+            "May"
+
+        Time.Jun ->
+            "June"
+
+        Time.Jul ->
+            "July"
+
+        Time.Aug ->
+            "August"
+
+        Time.Sep ->
+            "September"
+
+        Time.Oct ->
+            "October"
+
+        Time.Nov ->
+            "November"
+
+        Time.Dec ->
+            "December"
 
 
 numberParser : Parser Time.Month

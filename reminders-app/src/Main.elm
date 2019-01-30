@@ -16,6 +16,8 @@ import Task exposing (Task)
 import Time
 import Url
 import Vevapp.Moment as Moment exposing (Moment)
+import Vevapp.Moment.Month as Month
+import Vevapp.Moment.Weekday as Weekday
 import Vevapp.Port as Port
 import Vevapp.Reminder as Reminder exposing (Reminder)
 import Vevapp.User as User exposing (User)
@@ -38,14 +40,15 @@ subscriptions _ =
 
 type alias Model =
     { time : Time.Posix
-    , title : String
+    , zone : Time.Zone
+    , summary : String
     , when : String
     , reminders : RemoteData String (List Reminder)
     }
 
 
 type Msg
-    = SetTitle String
+    = SetSummary String
     | SetWhen String
     | Init
     | FromJavascript Port.MessageFromJavascript
@@ -56,11 +59,12 @@ init : Maybe User -> ( Task Never Model, Cmd Msg )
 init maybeUser =
     let
         task =
-            Task.map toModel Time.now
+            Task.map2 toModel Time.now Time.here
 
-        toModel time =
+        toModel time zone =
             { time = time
-            , title = ""
+            , zone = zone
+            , summary = ""
             , when = ""
             , reminders = RemoteData.NotAsked
             }
@@ -74,8 +78,8 @@ init maybeUser =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        SetTitle title ->
-            ( { model | title = title }, Cmd.none )
+        SetSummary summary ->
+            ( { model | summary = summary }, Cmd.none )
 
         SetWhen when ->
             let
@@ -122,8 +126,11 @@ listRemindersOptions minTime =
         maxTime =
             minTime
                 |> Time.posixToMillis
-                |> (\ms -> ms + 365 * 24 * 60 * 60 * 1000)
+                |> addYear
                 |> Time.millisToPosix
+
+        addYear milliseconds =
+            milliseconds + 365 * 24 * 60 * 60 * 1000
     in
     { calendarId = "primary"
     , maxResults = 100
@@ -144,9 +151,10 @@ view : Model -> Html Msg
 view model =
     let
         rows =
-            [ Element.row [ Element.width Element.fill, Element.spacing 20 ] [ titleInput model ]
+            [ Element.row [ Element.width Element.fill, Element.spacing 20 ] [ summaryInput model ]
             , Element.row [ Element.width Element.fill, Element.spacing 20 ] [ whenInput model ]
-            , Element.row [ Element.width Element.fill, Element.spacing 20 ] [ viewReminders model ]
+            , Element.row [ Element.width Element.fill, Element.spacing 20 ] [ reminderDraft model ]
+            , Element.row [ Element.width Element.fill, Element.spacing 20 ] [ remindersTable model ]
             ]
 
         column =
@@ -168,19 +176,19 @@ view model =
         column
 
 
-titleInput : Model -> Element Msg
-titleInput model =
+summaryInput : Model -> Element Msg
+summaryInput model =
     let
         label =
-            Input.labelAbove [ Font.bold, Font.size 14 ] (Element.text "Title")
+            Input.labelAbove [ Font.bold, Font.size 14 ] (Element.text "Summary")
     in
     Input.text
         [ borderColor
         , Font.size 20
         , Element.spacing 10
         ]
-        { onChange = SetTitle
-        , text = model.title
+        { onChange = SetSummary
+        , text = model.summary
         , placeholder = Nothing
         , label = label
         }
@@ -204,8 +212,35 @@ whenInput model =
         }
 
 
-viewReminders : Model -> Element Msg
-viewReminders model =
+formatTime : Time.Zone -> Time.Posix -> String
+formatTime zone time =
+    String.concat
+        [ String.padLeft 2 '0' <| String.fromInt <| Time.toDay zone time
+        , " "
+        , Month.toString <| Time.toMonth zone time
+        , " "
+        , String.fromInt <| Time.toYear zone time
+        , ", "
+        , String.padLeft 2 '0' <| String.fromInt <| Time.toHour zone time
+        , ":"
+        , String.padLeft 2 '0' <| String.fromInt <| Time.toMinute zone time
+        , " "
+        , Weekday.toString <| Time.toWeekday zone time
+        ]
+
+
+reminderDraft : Model -> Element Msg
+reminderDraft model =
+    case Moment.parse model.when of
+        Just moment ->
+            Element.text (formatTime model.zone (Moment.toTime model.time model.zone moment))
+
+        Nothing ->
+            Element.text ""
+
+
+remindersTable : Model -> Element Msg
+remindersTable model =
     let
         rowPadding =
             Element.padding 10
@@ -216,6 +251,36 @@ viewReminders model =
 
             else
                 Background.color (Element.rgb255 245 247 250)
+
+        summaryHeader =
+            Element.el
+                [ rowColor 1
+                , Font.bold
+                , Border.widthEach
+                    { bottom = 1
+                    , left = 1
+                    , right = 1
+                    , top = 0
+                    }
+                , borderColor
+                , rowPadding
+                ]
+                (Element.text "Summary")
+
+        whenHeader =
+            Element.el
+                [ rowColor 1
+                , Font.bold
+                , Border.widthEach
+                    { bottom = 1
+                    , left = 0
+                    , right = 1
+                    , top = 0
+                    }
+                , borderColor
+                , rowPadding
+                ]
+                (Element.text "When")
 
         leftColumnView index reminder =
             Element.el
@@ -269,11 +334,11 @@ viewReminders model =
                         ]
                         { data = reminders
                         , columns =
-                            [ { header = Element.none
+                            [ { header = summaryHeader
                               , width = Element.fill
                               , view = leftColumnView
                               }
-                            , { header = Element.none
+                            , { header = whenHeader
                               , width = Element.fill
                               , view = rightColumnView
                               }
