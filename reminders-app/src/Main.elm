@@ -51,6 +51,7 @@ type Msg
     = SetSummary String
     | SetWhen String
     | Init
+    | CreateReminder
     | FromJavascript Port.MessageFromJavascript
     | FromJavascriptError String
 
@@ -98,6 +99,9 @@ update msg model =
                     Port.send (Port.ListReminders options)
             in
             ( { model | reminders = RemoteData.Loading }, cmd )
+
+        CreateReminder ->
+            ( model, Cmd.none )
 
         FromJavascript jsMsg ->
             updateFromJavascript jsMsg model
@@ -154,6 +158,7 @@ view model =
             [ Element.row [ Element.width Element.fill, Element.spacing 20 ] [ summaryInput model ]
             , Element.row [ Element.width Element.fill, Element.spacing 20 ] [ whenInput model ]
             , Element.row [ Element.width Element.fill, Element.spacing 20 ] [ reminderDraft model ]
+            , Element.row [ Element.width Element.fill, Element.spacing 20 ] [ createButton model ]
             , Element.row [ Element.width Element.fill, Element.spacing 20 ] [ remindersTable model ]
             ]
 
@@ -237,6 +242,42 @@ reminderDraft model =
 
         Nothing ->
             Element.text ""
+
+
+createButton : Model -> Element Msg
+createButton model =
+    let
+        optionAttributes : List (Element.Attribute Msg)
+        optionAttributes =
+            let
+                sharedAttrs =
+                    [ Border.color (Element.rgb255 217 217 217)
+                    , Border.widthEach
+                        { bottom = 1
+                        , right = 1
+                        , left = 1
+                        , top = 1
+                        }
+                    , Element.width Element.fill
+                    , Element.padding 13
+                    , Font.size 18
+                    , Element.pointer
+                    , Events.onClick CreateReminder
+                    ]
+            in
+            sharedAttrs
+                ++ [ Background.color (Element.rgb255 255 255 255)
+                   , Font.color (Element.rgb255 0 0 0)
+                   ]
+
+        button =
+            Element.el
+                optionAttributes
+                (Element.el [ Element.centerX, Element.centerY ] (Element.text "Create Reminder"))
+    in
+    Element.column [ Element.width Element.fill, Element.spacing 10 ]
+        [ Element.row [ Element.width Element.fill, Element.spacing 0 ] [ button ]
+        ]
 
 
 remindersTable : Model -> Element Msg
