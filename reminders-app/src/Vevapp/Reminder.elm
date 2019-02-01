@@ -1,8 +1,11 @@
 module Vevapp.Reminder exposing
-    ( ListOptions
+    ( CreateOptions
+    , ListOptions
     , Reminder
     , apiResponseDecoder
+    , create
     , decoder
+    , encodeCreateOptions
     , encodeListOptions
     )
 
@@ -16,6 +19,101 @@ type alias Reminder =
     { summary : String
     , htmlLink : String
     , startDate : Time.Posix
+    }
+
+
+type alias CreateOptions =
+    { calendarId : String
+    , resource :
+        { summary : String
+        , start :
+            { dateTime : Time.Posix }
+        , end :
+            { dateTime : Time.Posix }
+        , reminders :
+            { useDefault : Bool
+            , overrides :
+                List
+                    { method : String
+                    , minutes : Int
+                    }
+            }
+        , extendedProperties :
+            { private :
+                { isReminder : Bool
+                }
+            }
+        }
+    }
+
+
+encodeCreateOptions : CreateOptions -> JE.Value
+encodeCreateOptions options =
+    let
+        encodeOverride { method, minutes } =
+            JE.object
+                [ ( "method", JE.string method )
+                , ( "minutes", JE.int minutes )
+                ]
+    in
+    JE.object
+        [ ( "calendarId", JE.string options.calendarId )
+        , ( "resource"
+          , JE.object
+                [ ( "summary", JE.string options.resource.summary )
+                , ( "start"
+                  , JE.object
+                        [ ( "dateTime", JE.string (Iso8601.fromTime options.resource.start.dateTime) ) ]
+                  )
+                , ( "end"
+                  , JE.object
+                        [ ( "dateTime", JE.string (Iso8601.fromTime options.resource.end.dateTime) ) ]
+                  )
+                , ( "reminders"
+                  , JE.object
+                        [ ( "useDefault", JE.bool options.resource.reminders.useDefault )
+                        , ( "overrides", JE.list encodeOverride options.resource.reminders.overrides )
+                        ]
+                  )
+                , ( "extendedProperties"
+                  , JE.object
+                        [ ( "private"
+                          , JE.object
+                                [ ( "isReminder", JE.bool options.resource.extendedProperties.private.isReminder ) ]
+                          )
+                        ]
+                  )
+                ]
+          )
+        ]
+
+
+create : String -> Time.Posix -> CreateOptions
+create summary startTime =
+    { calendarId = "primary"
+    , resource =
+        { summary = summary
+        , start =
+            { dateTime = startTime }
+        , end =
+            { dateTime = startTime }
+        , reminders =
+            { useDefault = False
+            , overrides =
+                [ { method = "email"
+                  , minutes = 0
+                  }
+                , { method = "popup"
+                  , minutes = 0
+                  }
+                ]
+            }
+        , extendedProperties =
+            { private =
+                { isReminder = True
+                }
+            }
+        }
     }
 
 

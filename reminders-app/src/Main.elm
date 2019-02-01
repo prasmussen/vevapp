@@ -43,7 +43,9 @@ type alias Model =
     , zone : Time.Zone
     , summary : String
     , when : String
+    , reminderTime : Maybe Time.Posix
     , reminders : RemoteData String (List Reminder)
+    , error : Maybe Error
     }
 
 
@@ -54,6 +56,14 @@ type Msg
     | CreateReminder
     | FromJavascript Port.MessageFromJavascript
     | FromJavascriptError String
+
+
+
+-- TODO: add more error types
+
+
+type Error
+    = CreateReminderError String
 
 
 init : Maybe User -> ( Task Never Model, Cmd Msg )
@@ -67,7 +77,9 @@ init maybeUser =
             , zone = zone
             , summary = ""
             , when = ""
+            , reminderTime = Nothing
             , reminders = RemoteData.NotAsked
+            , error = Nothing
             }
 
         cmd =
@@ -84,11 +96,12 @@ update msg model =
 
         SetWhen when ->
             let
-                _ =
-                    Moment.parse when
-                        |> Debug.log "moment"
+                reminderTime =
+                    when
+                        |> Moment.parse
+                        |> Maybe.map (Moment.toTime model.time model.zone)
             in
-            ( { model | when = when }, Cmd.none )
+            ( { model | when = when, reminderTime = reminderTime }, Cmd.none )
 
         Init ->
             let
@@ -101,7 +114,19 @@ update msg model =
             ( { model | reminders = RemoteData.Loading }, cmd )
 
         CreateReminder ->
-            ( model, Cmd.none )
+            case model.reminderTime of
+                Nothing ->
+                    ( model, Cmd.none )
+
+                Just startTime ->
+                    let
+                        options =
+                            Reminder.create model.summary startTime
+
+                        cmd =
+                            Port.send (Port.CreateReminder options)
+                    in
+                    ( model, cmd )
 
         FromJavascript jsMsg ->
             updateFromJavascript jsMsg model
@@ -122,6 +147,20 @@ updateFromJavascript msg model =
 
         Port.ListRemindersFailure err ->
             ( { model | reminders = RemoteData.Failure err }, Cmd.none )
+
+        Port.CreateReminderSuccess reminder ->
+            let
+                addReminder reminders =
+                    (reminder :: reminders)
+                        |> List.sortBy (.startDate >> Time.posixToMillis)
+
+                newReminders =
+                    RemoteData.map addReminder model.reminders
+            in
+            ( { model | reminders = newReminders }, Cmd.none )
+
+        Port.CreateReminderFailure err ->
+            ( { model | error = Just (CreateReminderError err) }, Cmd.none )
 
 
 listRemindersOptions : Time.Posix -> Reminder.ListOptions

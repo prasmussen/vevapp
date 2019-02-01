@@ -12,11 +12,14 @@ import Vevapp.Reminder as Reminder exposing (Reminder)
 
 type MessageToJavascript
     = ListReminders Reminder.ListOptions
+    | CreateReminder Reminder.CreateOptions
 
 
 type MessageFromJavascript
     = ListRemindersSuccess (List Reminder)
     | ListRemindersFailure String
+    | CreateReminderSuccess Reminder
+    | CreateReminderFailure String
 
 
 type alias JavascriptMsg =
@@ -40,6 +43,16 @@ send info =
                 { tag = "ListReminders"
                 , data = Reminder.encodeListOptions options
                 }
+
+        CreateReminder options ->
+            toJavascript
+                { tag = "CreateReminder"
+                , data = Reminder.encodeCreateOptions options
+                }
+
+
+
+-- TODO: do decoding in main?
 
 
 receive : (MessageFromJavascript -> msg) -> (String -> msg) -> Sub msg
@@ -69,6 +82,22 @@ receive tagger onError =
                             case JD.decodeValue JD.string jsMsg.data of
                                 Ok err ->
                                     tagger (ListRemindersFailure err)
+
+                                Err err ->
+                                    onError (JD.errorToString err)
+
+                        "CreateReminderSuccess" ->
+                            case JD.decodeValue Reminder.decoder jsMsg.data of
+                                Ok reminder ->
+                                    tagger (CreateReminderSuccess reminder)
+
+                                Err err ->
+                                    onError (JD.errorToString err)
+
+                        "CreateReminderFailure" ->
+                            case JD.decodeValue JD.string jsMsg.data of
+                                Ok err ->
+                                    tagger (CreateReminderFailure err)
 
                                 Err err ->
                                     onError (JD.errorToString err)

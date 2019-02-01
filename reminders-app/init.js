@@ -44,12 +44,19 @@ function update(msg, model) {
             var options = msg.data;
 
             gapi.client.calendar.events.list(options).then(function(res) {
-                console.log("success", res.result);
                 model.app.ports.fromJavascript.send(toMsg("ListRemindersSuccess", res.result));
             }, function(res) {
-                console.log("failure", res);
-                // TODO: send res.result instead
                 model.app.ports.fromJavascript.send(toMsg("ListRemindersFailure", res.result.error.message));
+            });
+            break;
+
+        case 'CreateReminder':
+            var options = msg.data;
+
+            gapi.client.calendar.events.insert(options).then(function(res) {
+                model.app.ports.fromJavascript.send(toMsg("CreateReminderSuccess", res.result));
+            }, function(res) {
+                model.app.ports.fromJavascript.send(toMsg("CreateReminderFailure", res.result.error.message));
             });
             break;
 
