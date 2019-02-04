@@ -207,6 +207,7 @@ queryInput model =
         [ borderColor
         , Font.size 20
         , Element.spacing 10
+        , Input.focusedOnLoad
         ]
         { onChange = SetQueryString
         , text = model.queryString
