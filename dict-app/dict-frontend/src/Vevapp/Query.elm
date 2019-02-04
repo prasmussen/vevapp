@@ -47,7 +47,7 @@ parseQuery url =
                 , ( Dictionary.toString Dictionary.UK_SE, Dictionary.UK_SE )
                 , ( Dictionary.toString Dictionary.UK_ES, Dictionary.UK_ES )
                 , ( Dictionary.toString Dictionary.SE_UK, Dictionary.SE_UK )
-                , ( Dictionary.toString Dictionary.DE_UK, Dictionary.DE_UK )
+                , ( Dictionary.toString Dictionary.DE_NO, Dictionary.DE_NO )
                 , ( Dictionary.toString Dictionary.FR_UK, Dictionary.FR_UK )
                 , ( Dictionary.toString Dictionary.ES_UK, Dictionary.ES_UK )
                 ]

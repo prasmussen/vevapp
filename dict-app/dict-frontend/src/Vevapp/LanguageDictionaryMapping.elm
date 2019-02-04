@@ -60,7 +60,7 @@ fromDictionary dict =
         Dictionary.SE_UK ->
             fromSwedishMapping
 
-        Dictionary.DE_UK ->
+        Dictionary.DE_NO ->
             fromDeutschMapping
 
         Dictionary.FR_UK ->
@@ -110,7 +110,7 @@ fromSwedishMapping =
 fromDeutschMapping : LanguageDictionaryMapping
 fromDeutschMapping =
     { from = Language.Deutsch
-    , to = Cons.singleton Dictionary.DE_UK
+    , to = Cons.singleton Dictionary.DE_NO
     }
 
 

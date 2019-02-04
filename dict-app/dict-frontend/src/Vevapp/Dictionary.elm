@@ -19,7 +19,7 @@ type Dictionary
     | UK_SE
     | UK_ES
     | SE_UK
-    | DE_UK
+    | DE_NO
     | FR_UK
     | ES_UK
 
@@ -57,8 +57,8 @@ toString dictionary =
         SE_UK ->
             "se_uk"
 
-        DE_UK ->
-            "de_uk"
+        DE_NO ->
+            "de_no"
 
         FR_UK ->
             "fr_uk"
@@ -100,8 +100,8 @@ fromString str =
         "se_uk" ->
             Just SE_UK
 
-        "de_uk" ->
-            Just DE_UK
+        "de_no" ->
+            Just DE_NO
 
         "fr_uk" ->
             Just FR_UK
@@ -146,8 +146,8 @@ toLanguagePair dictionary =
         SE_UK ->
             ( Language.Swedish, Language.English )
 
-        DE_UK ->
-            ( Language.Deutsch, Language.English )
+        DE_NO ->
+            ( Language.Deutsch, Language.Norwegian )
 
         FR_UK ->
             ( Language.French, Language.English )
