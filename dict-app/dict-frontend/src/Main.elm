@@ -1,6 +1,7 @@
 module Main exposing (main)
 
 import Browser
+import Browser.Dom as Dom
 import Browser.Navigation as Nav
 import Cons
 import Element exposing (Element)
@@ -13,6 +14,7 @@ import Html exposing (Html)
 import Html.Attributes as Attributes
 import Http
 import RemoteData
+import Task
 import Url
 import Vevapp.Api.Lookup as Api
 import Vevapp.Command as Command
@@ -62,6 +64,7 @@ type Msg
     | GotEntries QueryString (RemoteData.WebData (List Entry.Entry))
     | ClickedLink Browser.UrlRequest
     | UrlChange Url.Url
+    | NoOp
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
@@ -112,6 +115,7 @@ update msg model =
             ( { model | queryType = queryType }, Cmd.none )
                 |> Command.chain getEntries
                 |> Command.chain updateUrl
+                |> Command.chain focusInput
 
         SetQueryString queryString ->
             if String.isEmpty queryString then
@@ -131,6 +135,7 @@ update msg model =
             ( { model | langDictMap = langDictMap, dictionary = dictionary }, Cmd.none )
                 |> Command.chain getEntries
                 |> Command.chain updateUrl
+                |> Command.chain focusInput
 
         SetDictionary dictionary ->
             let
@@ -140,6 +145,7 @@ update msg model =
             ( { model | langDictMap = langDictMap, dictionary = dictionary }, Cmd.none )
                 |> Command.chain getEntries
                 |> Command.chain updateUrl
+                |> Command.chain focusInput
 
         GotEntries queryString webData ->
             if queryString /= model.queryString then
@@ -157,6 +163,9 @@ update msg model =
                     ( model, Nav.load url )
 
         UrlChange url ->
+            ( model, Cmd.none )
+
+        NoOp ->
             ( model, Cmd.none )
 
 
@@ -197,6 +206,11 @@ content model =
         column
 
 
+inputId : String
+inputId =
+    "query-input"
+
+
 queryInput : Model -> Element Msg
 queryInput model =
     let
@@ -204,7 +218,8 @@ queryInput model =
             Input.labelAbove [ Font.bold, Font.size 14 ] (Texts.toElement Texts.QueryT)
     in
     Input.text
-        [ borderColor
+        [ Element.htmlAttribute (Attributes.id inputId)
+        , borderColor
         , Font.size 20
         , Element.spacing 10
         , Input.focusedOnLoad
@@ -497,3 +512,8 @@ getEntries model =
 updateUrl : Model -> Cmd Msg
 updateUrl model =
     Nav.replaceUrl model.navKey (Query.buildQuery model)
+
+
+focusInput : Model -> Cmd Msg
+focusInput _ =
+    Task.attempt (\_ -> NoOp) (Dom.focus inputId)
