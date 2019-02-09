@@ -13,33 +13,35 @@ function init(auth, err) {
 
     var model = {
         app: app,
+        auth: auth,
     };
 
+    // Listen for messages from elm
     app.ports.toJavascript.subscribe(function(msg) {
         update(msg, model);
     });
 
-    // Listen for sign in events from elm
-    //app.ports.signIn.subscribe(function() {
-    //    auth.signIn();
-    //});
-
-    //// Listen for sign out events from elm
-    //app.ports.signOut.subscribe(function() {
-    //    auth.signOut();
-    //});
-
-    // Listen for sign-in state changes and send to elm
+    // Listen for sign-in state changes
     auth.isSignedIn.listen(function() {
-        console.log("auth changed", maybeUserFromAuth(auth));
-        //sendUser(auth);
+        update(toMsg("AuthChange"), model);
     });
-
-
 }
 
 function update(msg, model) {
     switch (msg.tag) {
+        case 'AuthChange':
+            var maybeUser = maybeUserFromAuth(model.auth);
+            model.app.ports.fromJavascript.send(toMsg("AuthChange", maybeUser));
+            break;
+
+        case 'SignIn':
+            model.auth.signIn();
+            break;
+
+        case 'SignOut':
+            model.auth.signOut();
+            break;
+
         case 'ListReminders':
             var options = msg.data;
 
@@ -71,18 +73,6 @@ function toMsg(tag, data) {
         tag: tag,
         data: data,
     };
-}
-
-function listReminders(successTag, errorTag, options) {
-    var now = new Date();
-
-
-    listReminders().then(function(res) {
-        var items = res.result.items.map(formatReminder);
-        app.ports.listRemindersSuccess.send(items);
-    }, function(res) {
-        app.ports.listRemindersFailed.send(res.result.error.message);
-    });
 }
 
 function maybeUserFromAuth(auth) {

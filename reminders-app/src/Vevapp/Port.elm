@@ -6,12 +6,16 @@ port module Vevapp.Port exposing
     )
 
 import Json.Decode as JD
+import Json.Decode.Extra as JDE
 import Json.Encode as JE
 import Vevapp.Reminder as Reminder exposing (Reminder)
+import Vevapp.User as User exposing (User)
 
 
 type MessageToJavascript
-    = ListReminders Reminder.ListOptions
+    = SignIn
+    | SignOut
+    | ListReminders Reminder.ListOptions
     | CreateReminder Reminder.CreateOptions
 
 
@@ -20,6 +24,7 @@ type MessageFromJavascript
     | ListRemindersFailure String
     | CreateReminderSuccess Reminder
     | CreateReminderFailure String
+    | AuthChange (Maybe User)
 
 
 type alias JavascriptMsg =
@@ -36,8 +41,20 @@ jsMsgDecoder =
 
 
 send : MessageToJavascript -> Cmd msg
-send info =
-    case info of
+send msg =
+    case msg of
+        SignIn ->
+            toJavascript
+                { tag = "SignIn"
+                , data = JE.null
+                }
+
+        SignOut ->
+            toJavascript
+                { tag = "SignOut"
+                , data = JE.null
+                }
+
         ListReminders options ->
             toJavascript
                 { tag = "ListReminders"
@@ -70,6 +87,14 @@ receive tagger onError =
 
                 Ok jsMsg ->
                     case jsMsg.tag of
+                        "AuthChange" ->
+                            case JD.decodeValue (JDE.maybe User.decoder) jsMsg.data of
+                                Ok maybeUser ->
+                                    tagger (AuthChange maybeUser)
+
+                                Err err ->
+                                    onError (JD.errorToString err)
+
                         "ListRemindersSuccess" ->
                             case JD.decodeValue Reminder.apiResponseDecoder jsMsg.data of
                                 Ok reminders ->

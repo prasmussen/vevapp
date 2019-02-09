@@ -41,6 +41,7 @@ subscriptions _ =
 type alias Model =
     { time : Time.Posix
     , zone : Time.Zone
+    , user : Maybe User
     , summary : String
     , when : String
     , reminderTime : Maybe Time.Posix
@@ -52,7 +53,9 @@ type alias Model =
 type Msg
     = SetSummary String
     | SetWhen String
-    | Init
+    | SignIn
+    | SignOut
+    | ListReminders
     | CreateReminder
     | FromJavascript Port.MessageFromJavascript
     | FromJavascriptError String
@@ -75,6 +78,7 @@ init maybeUser =
         toModel time zone =
             { time = time
             , zone = zone
+            , user = maybeUser
             , summary = ""
             , when = ""
             , reminderTime = Nothing
@@ -83,7 +87,12 @@ init maybeUser =
             }
 
         cmd =
-            Task.perform (\_ -> Init) (Task.succeed ())
+            case maybeUser of
+                Just _ ->
+                    Task.perform (\_ -> ListReminders) (Task.succeed ())
+
+                Nothing ->
+                    Cmd.none
     in
     ( task, cmd )
 
@@ -103,15 +112,14 @@ update msg model =
             in
             ( { model | when = when, reminderTime = reminderTime }, Cmd.none )
 
-        Init ->
-            let
-                options =
-                    listRemindersOptions model.time
+        ListReminders ->
+            listReminders model
 
-                cmd =
-                    Port.send (Port.ListReminders options)
-            in
-            ( { model | reminders = RemoteData.Loading }, cmd )
+        SignIn ->
+            ( model, Port.send Port.SignIn )
+
+        SignOut ->
+            ( model, Port.send Port.SignOut )
 
         CreateReminder ->
             case model.reminderTime of
@@ -142,6 +150,10 @@ update msg model =
 updateFromJavascript : Port.MessageFromJavascript -> Model -> ( Model, Cmd Msg )
 updateFromJavascript msg model =
     case msg of
+        Port.AuthChange maybeUser ->
+            { model | user = maybeUser }
+                |> listReminders
+
         Port.ListRemindersSuccess reminders ->
             ( { model | reminders = RemoteData.Success reminders }, Cmd.none )
 
@@ -161,6 +173,23 @@ updateFromJavascript msg model =
 
         Port.CreateReminderFailure err ->
             ( { model | error = Just (CreateReminderError err) }, Cmd.none )
+
+
+listReminders : Model -> ( Model, Cmd Msg )
+listReminders model =
+    let
+        cmd =
+            model.time
+                |> listRemindersOptions
+                |> Port.ListReminders
+                |> Port.send
+    in
+    case model.user of
+        Just _ ->
+            ( { model | reminders = RemoteData.Loading }, cmd )
+
+        Nothing ->
+            ( model, Cmd.none )
 
 
 listRemindersOptions : Time.Posix -> Reminder.ListOptions
@@ -194,21 +223,60 @@ view : Model -> Html Msg
 view model =
     let
         rows =
-            [ Element.row [ Element.width Element.fill, Element.spacing 20 ] [ summaryInput model ]
-            , Element.row [ Element.width Element.fill, Element.spacing 20 ] [ whenInput model ]
-            , Element.row [ Element.width Element.fill, Element.spacing 20 ] [ reminderDraft model ]
-            , Element.row [ Element.width Element.fill, Element.spacing 20 ] [ createButton model ]
-            , Element.row [ Element.width Element.fill, Element.spacing 20 ] [ remindersTable model ]
+            [ Element.column
+                [ Element.width Element.fill
+                , Element.height (Element.px 42)
+                , Border.color (Element.rgb255 217 217 217)
+                , Border.widthEach
+                    { bottom = 1
+                    , right = 0
+                    , left = 0
+                    , top = 0
+                    }
+                ]
+                [ Element.row
+                    [ Element.width (Element.maximum 1000 Element.fill)
+                    , Element.centerX
+                    , Element.centerY
+                    , Element.paddingXY 20 0
+                    ]
+                    [ topBar model
+                    ]
+                ]
+            , Element.column
+                [ Element.width (Element.maximum 1000 Element.fill)
+                , Element.centerX
+                , Element.spacing 20
+                , Element.padding 20
+                , Font.size 14
+                , Background.color (Element.rgb255 245 247 250)
+                ]
+                contentRows
             ]
+
+        contentRows =
+            case model.user of
+                Just _ ->
+                    [ Element.row [ Element.width Element.fill, Element.spacing 20 ] [ summaryInput model ]
+                    , Element.row [ Element.width Element.fill, Element.spacing 20 ] [ whenInput model ]
+                    , Element.row [ Element.width Element.fill, Element.spacing 20 ] [ reminderDraft model ]
+                    , Element.row [ Element.width Element.fill, Element.spacing 20 ] [ createButton model ]
+                    , Element.row [ Element.width Element.fill, Element.spacing 20 ] [ remindersTable model ]
+                    ]
+
+                Nothing ->
+                    [ Element.row
+                        [ Element.width Element.fill
+                        , Element.spacing 20
+                        , Element.pointer
+                        , Events.onClick SignIn
+                        ]
+                        [ Element.text "Sign in with google to create reminders" ]
+                    ]
 
         column =
             Element.column
-                [ Element.width (Element.maximum 800 Element.fill)
-                , Element.spacing 20
-                , Element.padding 20
-                , Element.centerX
-                , Font.size 14
-                , Background.color (Element.rgb255 245 247 250)
+                [ Element.width Element.fill
                 ]
                 rows
     in
@@ -218,6 +286,36 @@ view model =
         , Background.color (Element.rgb255 245 247 250)
         ]
         column
+
+
+topBar : Model -> Element Msg
+topBar model =
+    let
+        authElem =
+            case model.user of
+                Just user ->
+                    Element.el
+                        [ Element.alignRight
+                        , Element.pointer
+                        , Events.onClick SignOut
+                        ]
+                        (Element.text ("Sign out (" ++ user.email ++ ")"))
+
+                Nothing ->
+                    Element.el
+                        [ Element.alignRight
+                        , Element.pointer
+                        , Events.onClick SignIn
+                        ]
+                        (Element.text "Sign in with google")
+    in
+    Element.row
+        [ Element.width Element.fill
+        , Font.size 15
+        ]
+        [ Element.text "Reminders"
+        , authElem
+        ]
 
 
 summaryInput : Model -> Element Msg
