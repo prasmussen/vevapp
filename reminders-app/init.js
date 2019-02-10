@@ -114,9 +114,28 @@
         };
     }
 
-    function formatError(err) {
-        //err.errors
-        return "TODO";
+    function formatError(error) {
+        if (!error) {
+            return null;
+        }
+
+        if (error.error.errors.length === 0) {
+            console.error(error);
+            return "Failed initializing google api";
+        }
+
+        var errors = error.error.errors.map(function(err) {
+            return [
+                "Domain: ",
+                err.domain,
+                ", reason: ",
+                err.reason,
+                ", message: ",
+                err.message
+            ].join("");
+        });
+
+        return errors[0];
     }
 
     gapi.load('client:auth2', function() {
