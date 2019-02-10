@@ -500,7 +500,7 @@ remindersTable model =
                 , borderColor
                 , rowPadding
                 ]
-                (Element.text reminder.summary)
+                (Element.link [] { url = reminder.htmlLink, label = Element.text reminder.summary })
 
         rightColumnView index reminder =
             Element.el
