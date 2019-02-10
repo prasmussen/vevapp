@@ -119,23 +119,25 @@
             return null;
         }
 
-        if (error.error.errors.length === 0) {
+        if (error.error && error.error.errors && error.error.errors.length > 0) {
+            var errors = error.error.errors.map(function(err) {
+                return [
+                    "Domain: ",
+                    err.domain,
+                    ", reason: ",
+                    err.reason,
+                    ", message: ",
+                    err.message
+                ].join("");
+            });
+
+            return errors[0];
+        } else if (error.details) {
+            return error.details;
+        } else {
             console.error(error);
-            return "Failed initializing google api";
+            return "Unknown error, see console for more details";
         }
-
-        var errors = error.error.errors.map(function(err) {
-            return [
-                "Domain: ",
-                err.domain,
-                ", reason: ",
-                err.reason,
-                ", message: ",
-                err.message
-            ].join("");
-        });
-
-        return errors[0];
     }
 
     gapi.load('client:auth2', function() {
