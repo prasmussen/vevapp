@@ -38,7 +38,7 @@ subscriptions _ =
     Port.receive FromJavascript FromJavascriptError
 
 
-type alias Model =
+type alias InitializedModel =
     { time : Time.Posix
     , zone : Time.Zone
     , user : Maybe User
@@ -48,6 +48,11 @@ type alias Model =
     , reminders : RemoteData String (List Reminder)
     , error : Maybe Error
     }
+
+
+type Model
+    = InitSuccess InitializedModel
+    | InitFailure String
 
 
 type Msg
@@ -61,44 +66,59 @@ type Msg
     | FromJavascriptError String
 
 
-
--- TODO: add more error types
-
-
 type Error
     = CreateReminderError String
 
 
-init : Maybe User -> ( Task Never Model, Cmd Msg )
-init maybeUser =
+type alias Flags =
+    { user : Maybe User
+    , error : Maybe String
+    }
+
+
+init : Flags -> ( Task Never Model, Cmd Msg )
+init flags =
     let
         task =
             Task.map2 toModel Time.now Time.here
 
         toModel time zone =
-            { time = time
-            , zone = zone
-            , user = maybeUser
-            , summary = ""
-            , when = ""
-            , reminderTime = Nothing
-            , reminders = RemoteData.NotAsked
-            , error = Nothing
-            }
-
-        cmd =
-            case maybeUser of
-                Just _ ->
-                    Task.perform (\_ -> ListReminders) (Task.succeed ())
+            case flags.error of
+                Just error ->
+                    InitFailure error
 
                 Nothing ->
-                    Cmd.none
+                    InitSuccess
+                        { time = time
+                        , zone = zone
+                        , user = flags.user
+                        , summary = ""
+                        , when = ""
+                        , reminderTime = Nothing
+                        , reminders = RemoteData.NotAsked
+                        , error = Nothing
+                        }
+
+        cmd =
+            Task.perform (\_ -> ListReminders) (Task.succeed ())
     in
     ( task, cmd )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    case model of
+        InitSuccess initializedModel ->
+            initializedModel
+                |> updateInitialized msg
+                |> Tuple.mapFirst InitSuccess
+
+        InitFailure _ ->
+            ( model, Cmd.none )
+
+
+updateInitialized : Msg -> InitializedModel -> ( InitializedModel, Cmd Msg )
+updateInitialized msg model =
     case msg of
         SetSummary summary ->
             ( { model | summary = summary }, Cmd.none )
@@ -147,7 +167,7 @@ update msg model =
             ( model, Cmd.none )
 
 
-updateFromJavascript : Port.MessageFromJavascript -> Model -> ( Model, Cmd Msg )
+updateFromJavascript : Port.MessageFromJavascript -> InitializedModel -> ( InitializedModel, Cmd Msg )
 updateFromJavascript msg model =
     case msg of
         Port.AuthChange maybeUser ->
@@ -175,7 +195,7 @@ updateFromJavascript msg model =
             ( { model | error = Just (CreateReminderError err) }, Cmd.none )
 
 
-listReminders : Model -> ( Model, Cmd Msg )
+listReminders : InitializedModel -> ( InitializedModel, Cmd Msg )
 listReminders model =
     let
         cmd =
@@ -221,6 +241,16 @@ loadingView =
 
 view : Model -> Html Msg
 view model =
+    case model of
+        InitSuccess initializedModel ->
+            viewInitialized initializedModel
+
+        InitFailure error ->
+            Html.text ("Failed to initialize google api: " ++ error)
+
+
+viewInitialized : InitializedModel -> Html Msg
+viewInitialized model =
     let
         rows =
             [ Element.column
@@ -288,7 +318,7 @@ view model =
         column
 
 
-topBar : Model -> Element Msg
+topBar : InitializedModel -> Element Msg
 topBar model =
     let
         authElem =
@@ -318,7 +348,7 @@ topBar model =
         ]
 
 
-summaryInput : Model -> Element Msg
+summaryInput : InitializedModel -> Element Msg
 summaryInput model =
     let
         label =
@@ -336,7 +366,7 @@ summaryInput model =
         }
 
 
-whenInput : Model -> Element Msg
+whenInput : InitializedModel -> Element Msg
 whenInput model =
     let
         label =
@@ -371,7 +401,7 @@ formatTime zone time =
         ]
 
 
-reminderDraft : Model -> Element Msg
+reminderDraft : InitializedModel -> Element Msg
 reminderDraft model =
     case Moment.parse model.when of
         Just moment ->
@@ -381,7 +411,7 @@ reminderDraft model =
             Element.text ""
 
 
-createButton : Model -> Element Msg
+createButton : InitializedModel -> Element Msg
 createButton model =
     let
         optionAttributes : List (Element.Attribute Msg)
@@ -417,7 +447,7 @@ createButton model =
         ]
 
 
-remindersTable : Model -> Element Msg
+remindersTable : InitializedModel -> Element Msg
 remindersTable model =
     let
         rowPadding =
