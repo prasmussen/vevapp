@@ -160,10 +160,7 @@ updateInitialized msg model =
             updateFromJavascript jsMsg model
 
         FromJavascriptError err ->
-            let
-                _ =
-                    Debug.log "FromJavascriptError" err
-            in
+            -- TODO: set error in model
             ( model, Cmd.none )
 
 
